@@ -1,13 +1,8 @@
-#include<iostream>
+#include"detector.hpp"
 
-#include"orb.hpp"
+slam::Detector::Detector(cv::Ptr<cv::ORB> detector) : detector(detector) {}
 
-
-slam::FeatureDetector::FeatureDetector(cv::Ptr<cv::FeatureDetector> detector)
-    : detector(detector) {}
-
-
-void slam::FeatureDetector::detect(
+void slam::Detector::detect(
     const cv::InputArray& image,
     std::vector<cv::KeyPoint>& keypoints, cv::OutputArray& descriptors
 ) {
