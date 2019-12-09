@@ -1,16 +1,19 @@
+#ifndef DETECTOR_H
+#define DETECTOR_H
+
 #include<vector>
 
 #include<opencv2/features2d.hpp>
 
 namespace slam {
 
-class FeatureDetector{
+class Detector{
 private:
-    cv::Ptr<cv::FeatureDetector> detector;
+    cv::Ptr<cv::ORB> detector;
 
 public:
-    FeatureDetector(cv::Ptr<cv::FeatureDetector> detector);
-    ~FeatureDetector() = default;
+    Detector(cv::Ptr<cv::ORB> detector);
+    ~Detector() = default;
 
     /* Detect keypoints and calculate their descriptors for given image.
      *
@@ -23,6 +26,11 @@ public:
         const cv::InputArray& image,
         std::vector<cv::KeyPoint>& keypoints, cv::OutputArray& descriptors
     );
+
+    inline int getLevels() { return detector->getNLevels(); }
+    inline double getScaleFactor() { return detector->getScaleFactor(); }
 };
 
 };
+
+#endif
