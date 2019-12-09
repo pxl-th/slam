@@ -13,12 +13,12 @@
 
 namespace slam {
 
-constexpr const unsigned int GRID_COLS = 64, GRID_ROWS = 48;
+constexpr const int GRID_COLS = 64, GRID_ROWS = 48;
 
 class Frame {
 public:
     static bool initial;
-    static float gridColsInv, gridRowsInv;
+    static float gridColsInv, gridRowsInv; // cols = width
 
     Detector& detector;
 
@@ -36,7 +36,19 @@ public:
     Frame(cv::Mat& image, const double& timestamp, Detector& detector);
     ~Frame() = default;
 
+    /* *
+     * Select indices of keypoints in square window, with center at
+     * `(x, y)` and length of the side `2 * radius`.
+     * */
+    std::vector<size_t> getAreaFeatures(
+        const float x, const float y, const float radius,
+        const int minLevel, const int maxLevel
+    ) const;
 private:
+    /* *
+     * Assign features ids to grid cells
+     * to reduce computational complexity.
+     * */
     void _populateGrid();
 };
 
