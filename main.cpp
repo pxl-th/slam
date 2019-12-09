@@ -75,6 +75,9 @@ void test_frame() {
         1000, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE
     ));
     slam::Frame frame(image, 0, detector);
+
+    auto ids = frame.getAreaFeatures(500, 500, 100, 1, 4);
+    std::cout << ids.size() << std::endl;
 }
 
 int main() {
