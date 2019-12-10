@@ -3,85 +3,23 @@
 #include<opencv2/calib3d.hpp>
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
+#include<opencv2/imgproc.hpp>
 
 #include"calibration.hpp"
+#include"calibration_settings.hpp"
 
 namespace slam {
 
-CalibrationSettings::CalibrationSettings()
-    : boardSize(0, 0), squareSize(0) {}
-
-void CalibrationSettings::read(const cv::FileNode& node) {
-    node["boardWidth"] >> boardSize.width;
-    node["boardHeight"] >> boardSize.height;
-    node["squareSize"] >> squareSize;
-
-    cv::FileNode seq = node["images"];
-    for (
-        cv::FileNodeIterator iter = seq.begin(), iterEnd = seq.end();
-        iter != iterEnd;
-        ++iter
-    )
-        images.push_back(static_cast<std::string>(*iter));
-}
-
-void CalibrationSettings::write(cv::FileStorage& fs) const {
-    fs
-        << "{"
-        << "boardWidth" << boardSize.width
-        << "boardHeight" << boardSize.height
-        << "squareSize" << squareSize
-        << "}";
-}
-
-static void write(
-    cv::FileStorage& fs,
-    const std::string&,
-    const CalibrationSettings& settings
-) {
-    settings.write(fs);
-}
-
-void read(
-    const cv::FileNode& node,
-    CalibrationSettings& settings,
-    const CalibrationSettings& defaultSettings
-) {
-    if(node.empty())
-        settings = defaultSettings;
-    else
-        settings.read(node);
-}
-
-CalibrationSettings loadCalibrationSettings(const std::string& settingsFile) {
-    cv::FileStorage fs(settingsFile, cv::FileStorage::READ);
-    if (!fs.isOpened()) {
-        std::cerr
-            << "Could not open configuration file"
-            << settingsFile << std::endl;
-        return {};
-    }
-
-    CalibrationSettings settings;
-    fs["CalibrationSettings"] >> settings;
-    fs.release();
-
-    return settings;
-}
-
-void calibrateCamera(
-    const CalibrationSettings& settings, const std::string& outputFile,
-    bool display
-) {
+Calibration::Calibration(const CalibrationSettings& settings, bool display) {
     auto points = _findPoints(settings, display);
     if (!points) return;
     auto [imagePoints, imageSize] = points.value();
+
+    _calibrate(settings, imagePoints, imageSize);
 }
 
-std::optional<std::tuple<
-    std::vector<std::vector<cv::Point2f>>, cv::Size
->> _findPoints(const CalibrationSettings& settings, bool display) {
+std::optional<std::tuple<std::vector<std::vector<cv::Point2f>>, cv::Size>>
+Calibration::_findPoints(const CalibrationSettings& settings, bool display) {
     std::vector<std::vector<cv::Point2f>> imagePoints;
     cv::Size imageSize;
 
@@ -98,11 +36,12 @@ std::optional<std::tuple<
         imageSize = image.size();
 
         std::vector<cv::Point2f> points;
+        int boardFlags = cv::CALIB_CB_ADAPTIVE_THRESH
+            | cv::CALIB_CB_NORMALIZE_IMAGE;
+        if (!settings.useFisheye)
+            boardFlags |= cv::CALIB_CB_FAST_CHECK;
         bool found = cv::findChessboardCorners(
-            image, settings.boardSize, points,
-            cv::CALIB_CB_ADAPTIVE_THRESH
-            | cv::CALIB_CB_FAST_CHECK
-            | cv::CALIB_CB_NORMALIZE_IMAGE
+            image, settings.boardSize, points, boardFlags
         );
         if (!found) {
             std::cerr
@@ -146,12 +85,67 @@ std::optional<std::tuple<
     return std::tuple{imagePoints, imageSize};
 }
 
-CalibrationResult _calibrate(
-    const CalibrationSettings& settings,
-    std::vector<std::vector<cv::Point2f>>,
-    cv::Size imageSize
+std::vector<std::vector<cv::Point3f>>
+Calibration::_calculateBorderCornerPosition(
+    const CalibrationSettings& settings
 ) {
-    return CalibrationResult();
+    std::vector<std::vector<cv::Point3f>> corners(1);
+
+    for (int i = 0; i < settings.boardSize.height; i++) {
+        for (int j = 0; j < settings.boardSize.width; j++) {
+            corners[0].push_back(cv::Point3f(
+                j * settings.squareSize, i * settings.squareSize, 0
+            ));
+        }
+    }
+    return corners;
+}
+
+void Calibration::_calibrate(
+    const CalibrationSettings& settings,
+    const std::vector<std::vector<cv::Point2f>>& points,
+    const cv::Size& imageSize
+) {
+    cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
+    distortionCoefficients = cv::Mat::zeros(
+        settings.useFisheye ? 4 : 8, 1, CV_64F
+    );
+
+    if (settings.flag & cv::CALIB_FIX_ASPECT_RATIO)
+        cameraMatrix.at<double>(0, 0) = settings.aspectRatio;
+
+    float gridWidth = settings.squareSize * (settings.boardSize.width - 1);
+    auto corners = _calculateBorderCornerPosition(settings);
+    corners[0][settings.boardSize.width - 1].x = corners[0][0].x + gridWidth;
+
+    std::vector<cv::Point3f> newCorners = corners[0];
+    corners.resize(points.size(), corners[0]);
+
+    double reprojectionError;
+
+    if (settings.useFisheye) {
+        cv::Mat _rotations, _translations;
+        reprojectionError = cv::fisheye::calibrate(
+            corners, points, imageSize, cameraMatrix, distortionCoefficients,
+            _rotations, _translations, settings.flag
+        );
+
+        rotations.reserve(_rotations.rows);
+        translations.reserve(_translations.rows);
+        for (int i = 0; i < corners.size(); i++) {
+            rotations.push_back(_rotations.row(i));
+            translations.push_back(_translations.row(i));
+        }
+    } else {
+        reprojectionError = cv::calibrateCameraRO(
+            corners, points, imageSize, -1,
+            cameraMatrix, distortionCoefficients,
+            rotations, translations, newCorners,
+            settings.flag | cv::CALIB_USE_LU
+        );
+    }
+
+    std::cout << "Reprojection error: " << reprojectionError << std::endl;
 }
 
 };

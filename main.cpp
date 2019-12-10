@@ -5,6 +5,7 @@
 #include<opencv2/imgcodecs.hpp>
 
 #include"include/calibration.hpp"
+#include"include/calibration_settings.hpp"
 #include"include/detector.hpp"
 #include"include/frame.hpp"
 #include"include/matcher.hpp"
@@ -82,8 +83,7 @@ void test_settings() {
         "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration.yaml"
     );
     auto settings = slam::loadCalibrationSettings(settingsFile);
-
-    slam::calibrateCamera(settings, outputFile, false);
+    slam::Calibration calibration(settings, false);
 }
 
 int main() {

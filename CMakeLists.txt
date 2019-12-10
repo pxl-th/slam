@@ -9,6 +9,7 @@ add_executable(
     main
     main.cpp
     "${CMAKE_SOURCE_DIR}/src/calibration.cpp"
+    "${CMAKE_SOURCE_DIR}/src/calibration_settings.cpp"
     "${CMAKE_SOURCE_DIR}/src/detector.cpp"
     "${CMAKE_SOURCE_DIR}/src/frame.cpp"
     "${CMAKE_SOURCE_DIR}/src/matcher.cpp"
