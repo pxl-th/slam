@@ -1,19 +1,13 @@
 #include<iostream>
+#include<string>
 
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgcodecs.hpp>
 
+#include"include/calibration.hpp"
 #include"include/detector.hpp"
 #include"include/frame.hpp"
 #include"include/matcher.hpp"
-
-/* TODO:
- * - ORB matcher (search for init, hamming matching, compute three maxima)
- * - KeyFrame
- * - MapPoint
- * - Frame
- * - Map
- * */
 
 void test_orb() {
     cv::Mat image1 = cv::imread(
@@ -80,7 +74,20 @@ void test_frame() {
     std::cout << ids.size() << std::endl;
 }
 
+void test_settings() {
+    std::string settingsFile(
+        "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\settings.yaml"
+    );
+    std::string outputFile(
+        "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration.yaml"
+    );
+    auto settings = slam::loadCalibrationSettings(settingsFile);
+
+    slam::calibrateCamera(settings, outputFile, false);
+}
+
 int main() {
     /* test_orb(); */
-    test_frame();
+    /* test_frame(); */
+    test_settings();
 }
