@@ -3,7 +3,7 @@
 CalibrationSettings:
     boardWidth: 9
     boardHeight: 6
-    squareSize: 0.5
+    squareSize: 37
 
     aspectRatio: 1.0
     useFisheye: false
@@ -16,9 +16,7 @@ CalibrationSettings:
         - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\2.jpg"
         - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\3.jpg"
         - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\4.jpg"
-        # - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\5.jpg"
-        # - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\6.jpg"
-        # - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\7.jpg"
-        # - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\8.jpg"
-        # - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\9.jpg"
-        # - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\10.jpg"
+        - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\6.jpg"
+        - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\7.jpg"
+        - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\8.jpg"
+        - "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration-images\\9.jpg"

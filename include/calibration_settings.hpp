@@ -3,6 +3,7 @@
 
 #include<string>
 #include<vector>
+#include<optional>
 
 #include<opencv2/core.hpp>
 
@@ -46,7 +47,8 @@ void read(
     const CalibrationSettings& defaultSettings = CalibrationSettings()
 );
 
-CalibrationSettings loadCalibrationSettings(const std::string& settingsFile);
+/* std::optional<CalibrationSettings> */
+/* loadCalibrationSettings(const std::string& settingsFile); */
 
 };
 

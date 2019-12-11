@@ -20,16 +20,28 @@ public:
     std::vector<cv::Mat> rotations;
     std::vector<cv::Mat> translations;
 
-    std::vector<float> reprojectionErrors;
-    double averageError;
+    double calibrationError;
 
 public:
-    Calibration(const CalibrationSettings& settings, bool display = true);
+    Calibration() = default;
+    Calibration(
+        const CalibrationSettings& settings,
+        bool display = true,
+        float resize = 1080.0f
+    );
     ~Calibration() = default;
+
+    void read(const cv::FileNode& node);
+
+    void write(cv::FileStorage& fs) const;
 
 private:
     std::optional<std::tuple<std::vector<std::vector<cv::Point2f>>, cv::Size>>
-    _findPoints(const CalibrationSettings& settings, bool display);
+    _findPoints(
+        const CalibrationSettings& settings,
+        bool display,
+        float resize
+    );
 
     std::vector<std::vector<cv::Point3f>>
     _calculateBorderCornerPosition(const CalibrationSettings& settings);
@@ -40,6 +52,47 @@ private:
         const cv::Size& imageSize
     );
 };
+
+void write(
+    cv::FileStorage& fs, const std::string&, const Calibration& calibration
+);
+
+void read(
+    const cv::FileNode& node,
+    Calibration& calibration,
+    const Calibration& defaultCalibration
+);
+
+/* template<typename T> */
+/* void save(const T& object, const std::string& file, const std::string& key) { */
+/*     cv::FileStorage fs(file, cv::FileStorage::WRITE); */
+/*     if (!fs.isOpened()) { */
+/*         std::cerr << "Could not open file" << file << std::endl; */
+/*         return; */
+/*     } */
+
+/*     fs << key << object; */
+/*     fs.release(); */
+/* } */
+
+/* template<typename T> std::optional<T> */
+/* load(const std::string& file, const std::string& key) { */
+/*     cv::FileStorage fs(file, cv::FileStorage::READ); */
+/*     if (!fs.isOpened()) { */
+/*         std::cerr << "Could not open file" << file << std::endl; */
+/*         return {}; */
+/*     } */
+
+/*     T object; */
+/*     fs[key] >> object; */
+/*     fs.release(); */
+
+/*     return object; */
+/* } */
+
+/* void saveCalibration(const Calibration& calibration, const std::string& file); */
+
+/* std::optional<Calibration> loadCalibration(const std::string& file); */
 
 };
 

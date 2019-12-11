@@ -9,6 +9,7 @@
 #include"include/detector.hpp"
 #include"include/frame.hpp"
 #include"include/matcher.hpp"
+#include"include/loader.hpp"
 
 void test_orb() {
     cv::Mat image1 = cv::imread(
@@ -82,8 +83,13 @@ void test_settings() {
     std::string outputFile(
         "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration.yaml"
     );
-    auto settings = slam::loadCalibrationSettings(settingsFile);
+    slam::CalibrationSettings settings;
+    if (auto res = slam::load<slam::CalibrationSettings>(
+        settingsFile, "CalibrationSettings"); res
+    ) settings = res.value(); else return;
+
     slam::Calibration calibration(settings, false);
+    slam::save(calibration, outputFile, "Calibration");
 }
 
 int main() {

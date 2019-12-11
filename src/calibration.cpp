@@ -10,8 +10,12 @@
 
 namespace slam {
 
-Calibration::Calibration(const CalibrationSettings& settings, bool display) {
-    auto points = _findPoints(settings, display);
+Calibration::Calibration(
+    const CalibrationSettings& settings,
+    bool display,
+    float resize
+) {
+    auto points = _findPoints(settings, display, resize);
     if (!points) return;
     auto [imagePoints, imageSize] = points.value();
 
@@ -19,9 +23,14 @@ Calibration::Calibration(const CalibrationSettings& settings, bool display) {
 }
 
 std::optional<std::tuple<std::vector<std::vector<cv::Point2f>>, cv::Size>>
-Calibration::_findPoints(const CalibrationSettings& settings, bool display) {
+Calibration::_findPoints(
+    const CalibrationSettings& settings,
+    bool display,
+    float resize
+) {
     std::vector<std::vector<cv::Point2f>> imagePoints;
     cv::Size imageSize;
+    float scale;
 
     for (const std::string& image_file : settings.images) {
         std::cout << "Processing image " << image_file << std::endl;
@@ -33,6 +42,8 @@ Calibration::_findPoints(const CalibrationSettings& settings, bool display) {
                 << ". Aborting." << std::endl;
             break;
         }
+        if (resize > 0) scale = resize / image.cols;
+        cv::resize(image, image, cv::Size(), scale, scale);
         imageSize = image.size();
 
         std::vector<cv::Point2f> points;
@@ -66,8 +77,6 @@ Calibration::_findPoints(const CalibrationSettings& settings, bool display) {
             cv::drawChessboardCorners(
                 image, settings.boardSize, cv::Mat(points), found
             );
-            float scale = 1080.0f / image.cols;
-            cv::resize(image, image, cv::Size(), scale, scale);
             cv::imshow("Calibration", image);
             cv::waitKey(0);
             cv::destroyWindow("Calibration");
@@ -82,6 +91,7 @@ Calibration::_findPoints(const CalibrationSettings& settings, bool display) {
         return {};
     }
 
+    std::cout << "Done processing images." << std::endl;
     return std::tuple{imagePoints, imageSize};
 }
 
@@ -106,6 +116,8 @@ void Calibration::_calibrate(
     const std::vector<std::vector<cv::Point2f>>& points,
     const cv::Size& imageSize
 ) {
+    std::cout << "Calibrating..." << std::endl;
+
     cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
     distortionCoefficients = cv::Mat::zeros(
         settings.useFisheye ? 4 : 8, 1, CV_64F
@@ -121,11 +133,9 @@ void Calibration::_calibrate(
     std::vector<cv::Point3f> newCorners = corners[0];
     corners.resize(points.size(), corners[0]);
 
-    double reprojectionError;
-
     if (settings.useFisheye) {
         cv::Mat _rotations, _translations;
-        reprojectionError = cv::fisheye::calibrate(
+        calibrationError = cv::fisheye::calibrate(
             corners, points, imageSize, cameraMatrix, distortionCoefficients,
             _rotations, _translations, settings.flag
         );
@@ -137,15 +147,99 @@ void Calibration::_calibrate(
             translations.push_back(_translations.row(i));
         }
     } else {
-        reprojectionError = cv::calibrateCameraRO(
-            corners, points, imageSize, -1,
+        calibrationError = cv::calibrateCameraRO(
+            corners, points, imageSize, settings.boardSize.width - 1,
             cameraMatrix, distortionCoefficients,
             rotations, translations, newCorners,
             settings.flag | cv::CALIB_USE_LU
         );
     }
 
-    std::cout << "Reprojection error: " << reprojectionError << std::endl;
+    std::cout << "Reprojection error: " << calibrationError << std::endl;
 }
+
+void Calibration::read(const cv::FileNode& node) {
+    node["calibrationError"] >> calibrationError;
+    node["cameraMatrix"] >> cameraMatrix;
+    node["distortionCoefficients"] >> distortionCoefficients;
+
+    cv::FileNode rSeq = node["rotations"];
+    for (
+        cv::FileNodeIterator iter = rSeq.begin(), iterEnd = rSeq.end();
+        iter != iterEnd;
+        ++iter
+    ) {
+        cv::Mat tmp;
+        (*iter) >> tmp;
+        rotations.push_back(tmp);
+    }
+
+    cv::FileNode tSeq = node["translations"];
+    for (
+        cv::FileNodeIterator iter = tSeq.begin(), iterEnd = tSeq.end();
+        iter != iterEnd;
+        ++iter
+    ) {
+        cv::Mat tmp;
+        (*iter) >> tmp;
+        translations.push_back(tmp);
+    }
+}
+
+void Calibration::write(cv::FileStorage& fs) const {
+    fs
+        << "{"
+        << "calibrationError" << calibrationError
+        << "cameraMatrix" << cameraMatrix
+        << "distortionCoefficients" << distortionCoefficients;
+
+    fs << "rotations" << "[";
+    for (const auto& r : rotations) fs << r;
+    fs << "]";
+
+    fs << "translations" << "[";
+    for (const auto& t : translations) fs << t;
+    fs << "]";
+
+    fs << "}";
+}
+
+void write(
+    cv::FileStorage& fs, const std::string&, const Calibration& calibration
+) { calibration.write(fs); }
+
+void read(
+    const cv::FileNode& node,
+    Calibration& calibration,
+    const Calibration& defaultCalibration
+) {
+    if(node.empty()) calibration = defaultCalibration;
+    else calibration.read(node);
+}
+
+/* void saveCalibration(const Calibration& calibration, const std::string& file) { */
+/*     cv::FileStorage fs(file, cv::FileStorage::WRITE); */
+/*     if (!fs.isOpened()) { */
+/*         std::cerr << "Could not open file" << file << std::endl; */
+/*         return; */
+/*     } */
+
+/*     fs << "Calibration" << calibration; */
+/*     fs.release(); */
+/* } */
+
+/* std::optional<Calibration> loadCalibration(const std::string& file) { */
+/*     cv::FileStorage fs(file, cv::FileStorage::READ); */
+/*     if (!fs.isOpened()) { */
+/*         std::cerr << "Could not open file" << file << std::endl; */
+/*         return {}; */
+/*     } */
+
+/*     Calibration calibration; */
+/*     fs["Calibration"] >> calibration; */
+/*     fs.release(); */
+
+/*     return calibration; */
+/* } */
 
 };
