@@ -7,10 +7,6 @@
 
 #include"detector.hpp"
 
-/* TODO:
- * - getFeaturesInArea
- * */
-
 namespace slam {
 
 constexpr const int GRID_COLS = 64, GRID_ROWS = 48;
