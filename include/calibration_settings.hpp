@@ -35,21 +35,6 @@ public:
     void write(cv::FileStorage& fs) const;
 };
 
-void write(
-    cv::FileStorage& fs,
-    const std::string&,
-    const CalibrationSettings& settings
-);
-
-void read(
-    const cv::FileNode& node,
-    CalibrationSettings& settings,
-    const CalibrationSettings& defaultSettings = CalibrationSettings()
-);
-
-/* std::optional<CalibrationSettings> */
-/* loadCalibrationSettings(const std::string& settingsFile); */
-
 };
 
 #endif

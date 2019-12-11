@@ -6,6 +6,17 @@
 namespace slam {
 
 template<typename T>
+void write(cv::FileStorage& fs, const std::string&, const T& object) {
+    object.write(fs);
+}
+
+template<typename T>
+void read(const cv::FileNode& node, T& object, const T& defaultObject) {
+    if(node.empty()) object = defaultObject;
+    else object.read(node);
+}
+
+template<typename T>
 void save(const T& object, const std::string& file, const std::string& key) {
     cv::FileStorage fs(file, cv::FileStorage::WRITE);
     if (!fs.isOpened()) {

@@ -53,47 +53,6 @@ private:
     );
 };
 
-void write(
-    cv::FileStorage& fs, const std::string&, const Calibration& calibration
-);
-
-void read(
-    const cv::FileNode& node,
-    Calibration& calibration,
-    const Calibration& defaultCalibration
-);
-
-/* template<typename T> */
-/* void save(const T& object, const std::string& file, const std::string& key) { */
-/*     cv::FileStorage fs(file, cv::FileStorage::WRITE); */
-/*     if (!fs.isOpened()) { */
-/*         std::cerr << "Could not open file" << file << std::endl; */
-/*         return; */
-/*     } */
-
-/*     fs << key << object; */
-/*     fs.release(); */
-/* } */
-
-/* template<typename T> std::optional<T> */
-/* load(const std::string& file, const std::string& key) { */
-/*     cv::FileStorage fs(file, cv::FileStorage::READ); */
-/*     if (!fs.isOpened()) { */
-/*         std::cerr << "Could not open file" << file << std::endl; */
-/*         return {}; */
-/*     } */
-
-/*     T object; */
-/*     fs[key] >> object; */
-/*     fs.release(); */
-
-/*     return object; */
-/* } */
-
-/* void saveCalibration(const Calibration& calibration, const std::string& file); */
-
-/* std::optional<Calibration> loadCalibration(const std::string& file); */
-
 };
 
 #endif

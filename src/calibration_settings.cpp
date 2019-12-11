@@ -78,36 +78,4 @@ void CalibrationSettings::write(cv::FileStorage& fs) const {
     fs << "}";
 }
 
-void write(
-    cv::FileStorage& fs,
-    const std::string&,
-    const CalibrationSettings& settings
-) { settings.write(fs); }
-
-void read(
-    const cv::FileNode& node,
-    CalibrationSettings& settings,
-    const CalibrationSettings& defaultSettings
-) {
-    if(node.empty()) settings = defaultSettings;
-    else settings.read(node);
-}
-
-/* std::optional<CalibrationSettings> */
-/* loadCalibrationSettings(const std::string& settingsFile) { */
-/*     cv::FileStorage fs(settingsFile, cv::FileStorage::READ); */
-/*     if (!fs.isOpened()) { */
-/*         std::cerr */
-/*             << "Could not open configuration file" */
-/*             << settingsFile << std::endl; */
-/*         return {}; */
-/*     } */
-
-/*     CalibrationSettings settings; */
-/*     fs["CalibrationSettings"] >> settings; */
-/*     fs.release(); */
-
-/*     return settings; */
-/* } */
-
 };

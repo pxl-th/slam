@@ -204,42 +204,4 @@ void Calibration::write(cv::FileStorage& fs) const {
     fs << "}";
 }
 
-void write(
-    cv::FileStorage& fs, const std::string&, const Calibration& calibration
-) { calibration.write(fs); }
-
-void read(
-    const cv::FileNode& node,
-    Calibration& calibration,
-    const Calibration& defaultCalibration
-) {
-    if(node.empty()) calibration = defaultCalibration;
-    else calibration.read(node);
-}
-
-/* void saveCalibration(const Calibration& calibration, const std::string& file) { */
-/*     cv::FileStorage fs(file, cv::FileStorage::WRITE); */
-/*     if (!fs.isOpened()) { */
-/*         std::cerr << "Could not open file" << file << std::endl; */
-/*         return; */
-/*     } */
-
-/*     fs << "Calibration" << calibration; */
-/*     fs.release(); */
-/* } */
-
-/* std::optional<Calibration> loadCalibration(const std::string& file) { */
-/*     cv::FileStorage fs(file, cv::FileStorage::READ); */
-/*     if (!fs.isOpened()) { */
-/*         std::cerr << "Could not open file" << file << std::endl; */
-/*         return {}; */
-/*     } */
-
-/*     Calibration calibration; */
-/*     fs["Calibration"] >> calibration; */
-/*     fs.release(); */
-
-/*     return calibration; */
-/* } */
-
 };
