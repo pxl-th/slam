@@ -30,7 +30,7 @@ namespace slam {
 class Calibration {
 public:
     cv::Mat cameraMatrix;
-    cv::Mat distortionCoefficients;
+    cv::Mat distortions;
 
     std::vector<cv::Mat> rotations;
     std::vector<cv::Mat> translations;

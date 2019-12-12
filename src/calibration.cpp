@@ -112,7 +112,7 @@ void Calibration::_calibrate(
     std::cout << "Calibrating..." << std::endl;
 
     cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
-    distortionCoefficients = cv::Mat::zeros(
+    distortions = cv::Mat::zeros(
         settings.useFisheye ? 4 : 8, 1, CV_64F
     );
 
@@ -129,7 +129,7 @@ void Calibration::_calibrate(
     if (settings.useFisheye) {
         cv::Mat _rotations, _translations;
         calibrationError = cv::fisheye::calibrate(
-            corners, points, imageSize, cameraMatrix, distortionCoefficients,
+            corners, points, imageSize, cameraMatrix, distortions,
             _rotations, _translations, settings.flag
         );
 
@@ -142,7 +142,7 @@ void Calibration::_calibrate(
     } else {
         calibrationError = cv::calibrateCameraRO(
             corners, points, imageSize, settings.boardSize.width - 1,
-            cameraMatrix, distortionCoefficients,
+            cameraMatrix, distortions,
             rotations, translations, newCorners,
             settings.flag | cv::CALIB_USE_LU
         );
@@ -154,7 +154,7 @@ void Calibration::_calibrate(
 void Calibration::read(const cv::FileNode& node) {
     node["calibrationError"] >> calibrationError;
     node["cameraMatrix"] >> cameraMatrix;
-    node["distortionCoefficients"] >> distortionCoefficients;
+    node["distortions"] >> distortions;
 
     cv::FileNode rSeq = node["rotations"];
     for (
@@ -184,7 +184,7 @@ void Calibration::write(cv::FileStorage& fs) const {
         << "{"
         << "calibrationError" << calibrationError
         << "cameraMatrix" << cameraMatrix
-        << "distortionCoefficients" << distortionCoefficients;
+        << "distortions" << distortions;
 
     fs << "rotations" << "[";
     for (const auto& r : rotations) fs << r;

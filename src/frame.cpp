@@ -1,6 +1,7 @@
 #include<algorithm>
 
 #include<opencv2/core/types.hpp>
+#include<opencv2/calib3d.hpp>
 
 #include"frame.hpp"
 
@@ -10,8 +11,10 @@ bool Frame::initial = true;
 float Frame::gridColsInv, Frame::gridRowsInv;
 
 Frame::Frame(
-    cv::Mat& image, const double& timestamp, Detector& detector
-) : image(image), timestamp(timestamp), detector(detector) {
+    cv::Mat& image, const double& timestamp, Detector& detector,
+    cv::Mat& cameraMatrix, cv::Mat& distortions
+) : image(image), timestamp(timestamp), detector(detector),
+    cameraMatrix(cameraMatrix.clone()), distortions(distortions.clone()) {
     if (initial) {
         gridColsInv = (
             static_cast<float>(GRID_COLS)
@@ -27,6 +30,7 @@ Frame::Frame(
     /* Detect and extract keypoints and their descriptors */
     detector.detect(image, keypoints, descriptors);
     if (keypoints.empty()) return;
+    _undistortKeyPoints();
 
     _populateGrid();
     outliers = std::vector<bool>(keypoints.size(), false);
@@ -102,6 +106,34 @@ void Frame::_populateGrid() {
         y = static_cast<unsigned int>(round(keypoint.pt.y * Frame::gridRowsInv));
 
         grid[x][y].push_back(i);
+    }
+}
+
+void Frame::_undistortKeyPoints() {
+    if (distortions.at<float>(0) == 0.0f) {
+        undistortedKeypoints = keypoints;
+        return;
+    }
+
+    cv::Mat undistorted(static_cast<int>(keypoints.size()), 2, CV_32F);
+    for (int i = 0; i < keypoints.size(); i++) {
+        undistorted.at<float>(i, 0) = keypoints[i].pt.x;
+        undistorted.at<float>(i, 1) = keypoints[i].pt.y;
+    }
+
+    undistorted.reshape(2);
+    cv::undistortPoints(
+        undistorted, undistorted, cameraMatrix,
+        distortions, cv::Mat(), cameraMatrix
+    );
+    undistorted.reshape(1);
+
+    undistortedKeypoints.resize(keypoints.size());
+    for(int i = 0; i < keypoints.size(); i++) {
+        cv::KeyPoint p = keypoints[i];
+        p.pt.x = undistorted.at<float>(i, 0);
+        p.pt.y = undistorted.at<float>(i, 1);
+        undistortedKeypoints[i] = p;
     }
 }
 

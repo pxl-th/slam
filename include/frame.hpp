@@ -21,15 +21,20 @@ public:
     cv::Mat image;
     cv::Mat descriptors;
 
-    std::vector<cv::KeyPoint> keypoints;
+    std::vector<cv::KeyPoint> keypoints, undistortedKeypoints;
     std::vector<bool> outliers;
     std::vector<std::size_t> grid[GRID_COLS][GRID_ROWS];
+
+    cv::Mat cameraMatrix, distortions;
 
     double timestamp;
 
 public:
     Frame() = default;
-    Frame(cv::Mat& image, const double& timestamp, Detector& detector);
+    Frame(
+        cv::Mat& image, const double& timestamp, Detector& detector,
+        cv::Mat& cameraMatrix, cv::Mat& distortions
+    );
     ~Frame() = default;
 
     /* *
@@ -46,6 +51,8 @@ private:
      * to reduce computational complexity.
      * */
     void _populateGrid();
+
+    void _undistortKeyPoints();
 };
 
 };
