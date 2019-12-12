@@ -7,6 +7,9 @@
 
 namespace slam {
 
+/**
+ * Detector class for finding keypoints in the images.
+ */
 class Detector{
 private:
     cv::Ptr<cv::ORB> detector;
@@ -15,7 +18,8 @@ public:
     Detector(cv::Ptr<cv::ORB> detector);
     ~Detector() = default;
 
-    /* Detect keypoints and calculate their descriptors for given image.
+    /**
+     * Detect keypoints and calculate their descriptors for given image.
      *
      * Results are written into `keypoints` and `descriptors` arguments.
      * Where `descriptors` will be of [32, N] size, where N is the

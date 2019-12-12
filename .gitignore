@@ -1,5 +1,6 @@
 data/calibration-images/
 build/*
+docs/
 **/*.swp
 
 !build/build.bat
