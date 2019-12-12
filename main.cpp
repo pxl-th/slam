@@ -83,12 +83,11 @@ void test_settings() {
     std::string outputFile(
         "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration.yaml"
     );
-    slam::CalibrationSettings settings;
-    if (auto res = slam::load<slam::CalibrationSettings>(
-        settingsFile, "CalibrationSettings"); res
-    ) settings = res.value(); else return;
+    slam::CalibrationSettings settings = slam::load<slam::CalibrationSettings>(
+        settingsFile, "CalibrationSettings"
+    );
 
-    slam::Calibration calibration(settings, false);
+    slam::Calibration calibration(settings, true, 1080);
     slam::save(calibration, outputFile, "Calibration");
 }
 

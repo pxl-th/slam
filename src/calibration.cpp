@@ -11,22 +11,15 @@
 namespace slam {
 
 Calibration::Calibration(
-    const CalibrationSettings& settings,
-    bool display,
-    float resize
+    const CalibrationSettings& settings, bool display, float resize
 ) {
-    auto points = _findPoints(settings, display, resize);
-    if (!points) return;
-    auto [imagePoints, imageSize] = points.value();
-
+    auto [imagePoints, imageSize] = _findPoints(settings, display, resize);
     _calibrate(settings, imagePoints, imageSize);
 }
 
-std::optional<std::tuple<std::vector<std::vector<cv::Point2f>>, cv::Size>>
+std::tuple<std::vector<std::vector<cv::Point2f>>, cv::Size>
 Calibration::_findPoints(
-    const CalibrationSettings& settings,
-    bool display,
-    float resize
+    const CalibrationSettings& settings, bool display, float resize
 ) {
     std::vector<std::vector<cv::Point2f>> imagePoints;
     cv::Size imageSize;
@@ -84,15 +77,15 @@ Calibration::_findPoints(
     }
 
     if (imagePoints.size() != settings.images.size()) {
-        std::cerr
-            << "Calibration failed to retrieve image points from all images. "
-            << "Try again with different images."
-            << std::endl;
-        return {};
+        std::string msg =
+            "Calibration failed to retrieve image points from all images. "
+            "Try again with different images.";
+        std::cerr << msg << std::endl;
+        throw std::invalid_argument(msg);
     }
 
     std::cout << "Done processing images." << std::endl;
-    return std::tuple{imagePoints, imageSize};
+    return {imagePoints, imageSize};
 }
 
 std::vector<std::vector<cv::Point3f>>
