@@ -111,13 +111,11 @@ void Calibration::_calibrate(
 ) {
     std::cout << "Calibrating..." << std::endl;
 
-    cameraMatrix = cv::Mat::eye(3, 3, CV_64F);
-    distortions = cv::Mat::zeros(
-        settings.useFisheye ? 4 : 8, 1, CV_64F
-    );
+    cameraMatrix = cv::Mat::eye(3, 3, CV_32F);
+    distortions = cv::Mat::zeros(settings.useFisheye ? 4 : 8, 1, CV_32F);
 
     if (settings.flag & cv::CALIB_FIX_ASPECT_RATIO)
-        cameraMatrix.at<double>(0, 0) = settings.aspectRatio;
+        cameraMatrix.at<float>(0, 0) = settings.aspectRatio;
 
     float gridWidth = settings.squareSize * (settings.boardSize.width - 1);
     auto corners = _calculateBorderCornerPosition(settings);

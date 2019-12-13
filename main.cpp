@@ -73,7 +73,7 @@ void test_settings() {
     slam::CalibrationSettings settings = slam::load<slam::CalibrationSettings>(
         settingsFile, "CalibrationSettings"
     );
-    /* slam::Calibration calibration(settings, true, 1080); */
+    /* slam::Calibration calibration(settings, false, 1080); */
     /* slam::save(calibration, outputFile, "Calibration"); */
     auto calibration = slam::load<slam::Calibration>(outputFile, "Calibration");
 
