@@ -63,19 +63,6 @@ void test_orb() {
     cv::destroyWindow("test");
 }
 
-void test_frame() {
-    cv::Mat image = cv::imread(
-        "C:\\Users\\tonys\\Pictures\\r.png", cv::IMREAD_GRAYSCALE
-    );
-    slam::Detector detector(cv::ORB::create(
-        1000, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE
-    ));
-    slam::Frame frame(image, 0, detector);
-
-    auto ids = frame.getAreaFeatures(500, 500, 100, 1, 4);
-    std::cout << ids.size() << std::endl;
-}
-
 void test_settings() {
     std::string settingsFile(
         "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\settings.yaml"
@@ -86,9 +73,22 @@ void test_settings() {
     slam::CalibrationSettings settings = slam::load<slam::CalibrationSettings>(
         settingsFile, "CalibrationSettings"
     );
+    /* slam::Calibration calibration(settings, false, 1080); */
+    /* slam::save(calibration, outputFile, "Calibration"); */
+    auto calibration = slam::load<slam::Calibration>(outputFile, "Calibration");
 
-    slam::Calibration calibration(settings, true, 1080);
-    slam::save(calibration, outputFile, "Calibration");
+    cv::Mat image = cv::imread(
+        "C:\\Users\\tonys\\Pictures\\r.png", cv::IMREAD_GRAYSCALE
+    );
+    slam::Detector detector(cv::ORB::create(
+        1000, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE
+    ));
+    slam::Frame frame(
+        image, 0, detector, calibration.cameraMatrix, calibration.distortions
+    );
+
+    auto ids = frame.getAreaFeatures(500, 500, 100, 1, 4);
+    std::cout << ids.size() << std::endl;
 }
 
 int main() {
