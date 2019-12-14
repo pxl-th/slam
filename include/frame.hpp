@@ -41,7 +41,7 @@ public:
 
     std::vector<cv::KeyPoint> keypoints, undistortedKeypoints;
     std::vector<bool> outliers;
-    std::vector<std::size_t> grid[GRID_COLS][GRID_ROWS];
+    std::vector<int> grid[GRID_COLS][GRID_ROWS];
 
     cv::Mat cameraMatrix, distortions;
 
@@ -81,9 +81,8 @@ public:
      * In order to extract from any level, specify both
      * `minLevel` and `maxLevel` as `-1`.
      */
-    std::vector<size_t> getAreaFeatures(
-        const float x, const float y, const float side,
-        const int minLevel = -1, const int maxLevel = -1
+    std::vector<int> getAreaFeatures(
+        float x, float y, float side, int minLevel = -1, int maxLevel = -1
     ) const;
 private:
     /**
