@@ -11,7 +11,6 @@ namespace slam {
 
 class Matcher{
 private:
-    float distanceRatio;
     cv::Ptr<cv::BFMatcher> matcher;
 
 public:
@@ -19,7 +18,7 @@ public:
     ~Matcher() = default;
 
     /**
-     * Find matches between given descriptors.
+     * Find matches between descriptors in given frames.
      *
      * @param[in] frame1 Frame which will be used to find matches with `frame2`.
      * @param[in] frame2 Frame which will be used to find mathces with `frame1`
