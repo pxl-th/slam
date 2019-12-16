@@ -1,67 +1,18 @@
 #include<iostream>
 #include<string>
 
+#include<opencv2/calib3d.hpp>
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgcodecs.hpp>
+#include<opencv2/viz.hpp>
 
 #include"include/calibration.hpp"
 #include"include/calibration_settings.hpp"
 #include"include/detector.hpp"
 #include"include/frame.hpp"
+#include"include/initializer.hpp"
 #include"include/matcher.hpp"
 #include"include/loader.hpp"
-
-void test_orb() {
-    cv::Mat image1 = cv::imread(
-        "C:\\Users\\tonys\\Pictures\\r.png", cv::IMREAD_GRAYSCALE
-    );
-    cv::Mat image2 = cv::imread(
-        "C:\\Users\\tonys\\Pictures\\r3.png", cv::IMREAD_GRAYSCALE
-    );
-
-    cv::Ptr<cv::ORB> orb = cv::ORB::create(
-        100, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE
-    );
-    slam::Detector detector(orb);
-
-    cv::Mat descriptors1, descriptors2;
-    std::vector<cv::KeyPoint> keypoints1, keypoints2;
-    detector.detect(image1, keypoints1, descriptors1);
-    detector.detect(image2, keypoints2, descriptors2);
-
-    slam::Matcher matcher(cv::DescriptorMatcher::create(
-        cv::DescriptorMatcher::BRUTEFORCE_HAMMING
-    ));
-    std::vector<std::vector<cv::DMatch>> matches;
-
-    matcher.knnMatch(descriptors1, descriptors2, matches, 2);
-    std::cout << descriptors1.size() << std::endl;
-    std::cout << descriptors2.size() << std::endl;
-    std::cout << matches.size() << std::endl;
-
-    const float ratio_thresh = 0.7f;
-    std::vector<cv::DMatch> good_matches;
-    /* for (size_t i = 0; i < matches.size(); i++) { */
-    /*     good_matches.push_back(matches[i][0]); */
-    /* } */
-    for (size_t i = 0; i < matches.size(); i++) {
-        if (matches[i][0].distance < ratio_thresh * matches[i][1].distance) {
-            good_matches.push_back(matches[i][0]);
-        }
-    }
-
-    cv::Mat img_matches;
-    cv::drawMatches(
-        image1, keypoints1, image2, keypoints2,
-        good_matches, img_matches,
-        cv::Scalar::all(-1), cv::Scalar::all(-1),
-        std::vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS
-    );
-
-    cv::imshow("test", img_matches);
-    cv::waitKey(0);
-    cv::destroyWindow("test");
-}
 
 void test_settings() {
     std::string settingsFile(
@@ -76,23 +27,49 @@ void test_settings() {
     /* slam::Calibration calibration(settings, false, 1080); */
     /* slam::save(calibration, outputFile, "Calibration"); */
     auto calibration = slam::load<slam::Calibration>(outputFile, "Calibration");
+    slam::Detector detector(cv::ORB::create(1000, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE));
+    slam::Matcher matcher(cv::BFMatcher::create(cv::BFMatcher::BRUTEFORCE_HAMMING, true));
 
-    cv::Mat image = cv::imread(
-        "C:\\Users\\tonys\\Pictures\\r.png", cv::IMREAD_GRAYSCALE
+    slam::Frame frame1(
+        cv::imread("C:\\Users\\tonys\\Downloads\\1.jpg", cv::IMREAD_GRAYSCALE),
+        0, detector, calibration.cameraMatrix, calibration.distortions
     );
-    slam::Detector detector(cv::ORB::create(
-        1000, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE
-    ));
-    slam::Frame frame(
-        image, 0, detector, calibration.cameraMatrix, calibration.distortions
+    slam::Frame frame2(
+        cv::imread("C:\\Users\\tonys\\Downloads\\2.jpg", cv::IMREAD_GRAYSCALE),
+        0, detector, calibration.cameraMatrix, calibration.distortions
     );
 
-    auto ids = frame.getAreaFeatures(500, 500, 100, 1, 4);
-    std::cout << ids.size() << std::endl;
+    std::vector<cv::DMatch> matches;
+    matcher.frameMatch(frame1, frame2, matches, 300, 50);
+    std::cout << "Frame matches " << matches.size() << std::endl;
+
+    slam::Initializer initializer(frame1);
+    auto [rotation, translation, inliersMask, reconstructedPoints] = (
+        initializer.initialize(frame2, matches)
+    );
+    std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
+    std::cout << translation << std::endl;
+
+    cv::viz::Viz3d window("slam");
+    cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white());
+    cv::viz::WCoordinateSystem coordinateSystem;
+
+    while (!window.wasStopped()) {
+        window.showWidget("CS", coordinateSystem);
+        window.showWidget("cloud", cloud);
+        window.spinOnce(1, true);
+    }
 }
 
 int main() {
-    /* test_orb(); */
-    /* test_frame(); */
     test_settings();
+    /* std::vector<cv::Point3f> p = {cv::Point3f(1, 2, 3), cv::Point3f(4, 5, 6)}; */
+    /* cv::Mat m(4, 3, CV_32F); */
+    /* for (size_t i = 0; i < p.size(); i++) { */
+    /*     m.at<float>(i, 0) = p[i].x; */
+    /*     m.at<float>(i, 1) = p[i].y; */
+    /*     m.at<float>(i, 2) = p[i].z; */
+    /* } */
+    /* std::cout << m << std::endl; */
+    /* std::cout << m.rows << " " << m.cols << std::endl; */
 }

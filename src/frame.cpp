@@ -41,11 +41,10 @@ Frame::Frame(
     outliers = std::vector<bool>(keypoints.size(), false);
 }
 
-std::vector<size_t> Frame::getAreaFeatures(
-    const float x, const float y, const float side,
-    const int minLevel, const int maxLevel
+std::vector<int> Frame::getAreaFeatures(
+    float x, float y, float side, int minLevel, int maxLevel
 ) const {
-    std::vector<size_t> indices;
+    std::vector<int> indices;
 
     int minCellX = std::max(
         0, static_cast<int>(floor((x - side) * gridColsInv))
@@ -69,12 +68,12 @@ std::vector<size_t> Frame::getAreaFeatures(
     bool checkLevels = (minLevel != -1 && maxLevel != -1);
     bool sameLevel = (checkLevels && (minLevel == maxLevel));
 
-    for (size_t i = minCellX; i < maxCellX; i++) {
-        for (size_t j = minCellY; j < maxCellY; j++) {
-            const std::vector<size_t>& cell = grid[i][j];
+    for (int i = minCellX; i < maxCellX; i++) {
+        for (int j = minCellY; j < maxCellY; j++) {
+            const std::vector<int>& cell = grid[i][j];
             if (cell.empty()) continue;
 
-            for (size_t k = 0; k < cell.size(); k++) {
+            for (int k = 0; k < static_cast<int>(cell.size()); k++) {
                 const cv::KeyPoint& kp = keypoints[cell[k]];
 
                 if (checkLevels && !sameLevel) {
@@ -96,21 +95,21 @@ std::vector<size_t> Frame::getAreaFeatures(
 }
 
 void Frame::_populateGrid() {
-    unsigned int reservedCellSize = static_cast<unsigned int>(
-        0.5f * keypoints.size() / static_cast<float>(GRID_ROWS * GRID_COLS)
-    );
-    for (unsigned int i = 0; i < GRID_COLS; i++)
-        for (unsigned int j = 0; j < GRID_ROWS; j++)
-            grid[i][j].reserve(reservedCellSize);
+    size_t x, y;
+    for (size_t i = 0; i < undistortedKeypoints.size(); i++) {
+        cv::KeyPoint& keypoint = undistortedKeypoints[i];
 
-    unsigned int x, y;
-    for (size_t i = 0; i < keypoints.size(); i++) {
-        cv::KeyPoint& keypoint = keypoints[i];
+        x = static_cast<size_t>(round(
+            (keypoint.pt.x - imageBounds[0]) * Frame::gridColsInv
+        ));
+        y = static_cast<size_t>(round(
+            (keypoint.pt.y - imageBounds[2]) * Frame::gridRowsInv
+        ));
 
-        x = static_cast<unsigned int>(round(keypoint.pt.x * Frame::gridColsInv));
-        y = static_cast<unsigned int>(round(keypoint.pt.y * Frame::gridRowsInv));
+        if (x < 0 || x > GRID_COLS || y < 0 || y > GRID_ROWS)
+            continue;
 
-        grid[x][y].push_back(i);
+        grid[x][y].push_back(static_cast<int>(i));
     }
 }
 
@@ -146,7 +145,7 @@ void Frame::_undistortKeyPoints() {
 }
 
 void Frame::_undistortImageBounds() {
-    // If not distortion, then nothing to undistort.
+    // If no distortion, then nothing to undistort.
     if (distortions.at<float>(0) == 0.0) {
         imageBounds[0] = 0; imageBounds[1] = image.cols;
         imageBounds[2] = 0; imageBounds[3] = image.rows;

@@ -2,5 +2,7 @@ data/calibration-images/
 build/*
 docs/
 **/*.swp
+vcpkg/
+compile_commands.json
 
 !build/build.bat
