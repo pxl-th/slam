@@ -19,6 +19,9 @@ public:
      * @param current Current frame, that was successfully matched
      * with `reference` frame.
      * @param matches Matches between `reference` and `current` frames.
+     *
+     * @return rotatiton, translation, inliers mask (0 value is outlier),
+     * reconstructed feature points
      */
     std::tuple<cv::Mat, cv::Mat, cv::Mat, std::vector<cv::Point3f>>
     initialize(const Frame& current, const std::vector<cv::DMatch>& matches);

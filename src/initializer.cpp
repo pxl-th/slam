@@ -28,21 +28,17 @@ Initializer::initialize(
         referencePoints, currentPoints, reference.cameraMatrix,
         cv::RANSAC, 0.999, 1.0, mask
     );
-    for (size_t i = 0; i < mask.rows; i++) {
-        if (mask.at<uchar>(i) == 0) continue;
-        referencePointTmp.push_back(referencePoints[i]);
-        currentPointsTmp.push_back(currentPoints[i]);
-    }
-    referencePoints = referencePointTmp;
-    currentPoints = currentPointsTmp;
-
     cv::Mat rotation, translation, inliersMask;
     cv::recoverPose(
         essential, referencePoints, currentPoints,
         reference.cameraMatrix, rotation, translation, inliersMask
     );
-    for (size_t i = 0; i < inliersMask.rows; i++) {
-        if (inliersMask.at<uchar>(i) == 0) continue;
+    /* Filter out outliers */
+    for (int i = 0; i < inliersMask.rows; i++) {
+        if (inliersMask.at<uchar>(i) == 0 || mask.at<uchar>(i) == 0) {
+            inliersMask.at<uchar>(i) = mask.at<uchar>(i);
+            continue;
+        }
         referencePointTmp.push_back(referencePoints[i]);
         currentPointsTmp.push_back(currentPoints[i]);
     }
@@ -90,7 +86,7 @@ float Initializer::_reprojectionError(
         reprojectedPoints
     );
 
-    double score = 0;
+    float score = 0;
     cv::Point2f d;
     for (size_t i = 0; i < imagePoints.size(); i++) {
         d = imagePoints[i] - reprojectedPoints[i];
