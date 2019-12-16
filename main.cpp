@@ -1,6 +1,7 @@
 #include<iostream>
 #include<string>
 
+#include<opencv2/calib3d.hpp>
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgcodecs.hpp>
 #include<opencv2/viz.hpp>
@@ -39,12 +40,15 @@ void test_settings() {
     );
 
     std::vector<cv::DMatch> matches;
-
-    matcher.frameMatch(frame1, frame2, matches, 250, 50);
+    matcher.frameMatch(frame1, frame2, matches, 300, 50);
     std::cout << "Frame matches " << matches.size() << std::endl;
+
     slam::Initializer initializer(frame1);
-    auto [rotation, translation, inliersMask, reconstructedPoints] = initializer.initialize(frame2, matches);
+    auto [rotation, translation, inliersMask, reconstructedPoints] = (
+        initializer.initialize(frame2, matches)
+    );
     std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
+    std::cout << translation << std::endl;
 
     cv::viz::Viz3d window("slam");
     cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white());
@@ -59,4 +63,13 @@ void test_settings() {
 
 int main() {
     test_settings();
+    /* std::vector<cv::Point3f> p = {cv::Point3f(1, 2, 3), cv::Point3f(4, 5, 6)}; */
+    /* cv::Mat m(4, 3, CV_32F); */
+    /* for (size_t i = 0; i < p.size(); i++) { */
+    /*     m.at<float>(i, 0) = p[i].x; */
+    /*     m.at<float>(i, 1) = p[i].y; */
+    /*     m.at<float>(i, 2) = p[i].z; */
+    /* } */
+    /* std::cout << m << std::endl; */
+    /* std::cout << m.rows << " " << m.cols << std::endl; */
 }
