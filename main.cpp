@@ -63,13 +63,4 @@ void test_settings() {
 
 int main() {
     test_settings();
-    /* std::vector<cv::Point3f> p = {cv::Point3f(1, 2, 3), cv::Point3f(4, 5, 6)}; */
-    /* cv::Mat m(4, 3, CV_32F); */
-    /* for (size_t i = 0; i < p.size(); i++) { */
-    /*     m.at<float>(i, 0) = p[i].x; */
-    /*     m.at<float>(i, 1) = p[i].y; */
-    /*     m.at<float>(i, 2) = p[i].z; */
-    /* } */
-    /* std::cout << m << std::endl; */
-    /* std::cout << m.rows << " " << m.cols << std::endl; */
 }
