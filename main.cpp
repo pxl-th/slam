@@ -6,12 +6,15 @@
 #include<opencv2/imgcodecs.hpp>
 #include<opencv2/viz.hpp>
 
-#include"include/calibration.hpp"
-#include"include/calibration_settings.hpp"
-#include"include/detector.hpp"
-#include"include/frame.hpp"
-#include"include/initializer.hpp"
-#include"include/matcher.hpp"
+#include"include/calibration/calibration.hpp"
+#include"include/calibration/calibration_settings.hpp"
+#include"include/frame/detector.hpp"
+#include"include/frame/frame.hpp"
+#include"include/tracking/initializer.hpp"
+#include"include/map/keyframe.hpp"
+#include"include/frame/matcher.hpp"
+#include"include/map/mappoint.hpp"
+#include"include/map/map.hpp"
 #include"include/loader.hpp"
 
 void test_settings() {
@@ -48,8 +51,16 @@ void test_settings() {
         initializer.initialize(frame2, matches)
     );
     std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
-    std::cout << translation << std::endl;
+    std::cout << "Translation " << translation << std::endl;
 
+    slam::Map map;
+    /**
+     * TODO:
+     * - populate map
+     * - create tracker, reorganize code
+     */
+
+    /* Visualization */
     cv::viz::Viz3d window("slam");
     cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white());
     cv::viz::WCoordinateSystem coordinateSystem;

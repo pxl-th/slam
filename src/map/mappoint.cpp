@@ -1,4 +1,4 @@
-#include"mappoint.hpp"
+#include"map/mappoint.hpp"
 
 namespace slam {
 
@@ -13,12 +13,12 @@ void MapPoint::setWorldPos(const cv::Mat& newPos) { newPos.copyTo(position); }
 
 KeyFrame& MapPoint::getReferenceKeyframe() const { return keyframe; }
 
-std::map<KeyFrame&, int> MapPoint::getObservations() const {
+std::map<KeyFrame*, int> MapPoint::getObservations() const {
     return observations;
 }
 
 void MapPoint::addObservation(KeyFrame& keyframe, int id) {
-    observations[keyframe] = id;
+    observations[&keyframe] = id;
 }
 
 };

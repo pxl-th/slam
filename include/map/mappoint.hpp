@@ -11,19 +11,18 @@ class MapPoint {
 private:
     int id;
     KeyFrame& keyframe;
-    std::map<KeyFrame&, int> observations;
+    std::map<KeyFrame*, int> observations;
 
     cv::Mat position;
 public:
     MapPoint(int id, KeyFrame& keyframe, const cv::Mat& position);
-    ~MapPoint() = default;
 
     KeyFrame& getReferenceKeyframe() const;
 
     cv::Mat getWorlPos() const;
     void setWorldPos(const cv::Mat& newPos);
 
-    std::map<KeyFrame&, int> getObservations() const;
+    std::map<KeyFrame*, int> getObservations() const;
     void addObservation(KeyFrame& keyframe, int id);
 };
 

@@ -3,7 +3,7 @@
 
 #include<opencv2/core.hpp>
 
-#include"frame.hpp"
+#include"frame/frame.hpp"
 
 namespace slam {
 
