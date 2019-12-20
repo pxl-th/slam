@@ -42,8 +42,7 @@ void test_settings() {
         0, detector, calibration.cameraMatrix, calibration.distortions
     );
 
-    std::vector<cv::DMatch> matches;
-    matcher.frameMatch(frame1, frame2, matches, 300, 50);
+    auto matches = matcher.frameMatch(frame1, frame2, 300, 50);
     std::cout << "Frame matches " << matches.size() << std::endl;
 
     slam::Initializer initializer(frame1);
@@ -56,20 +55,17 @@ void test_settings() {
     auto map = initializer.initializeMap(
         frame2, rotation, translation, reconstructedPoints
     );
-    /**
-     * use inliersMask to filter out matches
-     */
 
     /* Visualization */
-    /* cv::viz::Viz3d window("slam"); */
-    /* cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white()); */
-    /* cv::viz::WCoordinateSystem coordinateSystem; */
+    cv::viz::Viz3d window("slam");
+    cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white());
+    cv::viz::WCoordinateSystem coordinateSystem;
 
-    /* while (!window.wasStopped()) { */
-    /*     window.showWidget("CS", coordinateSystem); */
-    /*     window.showWidget("cloud", cloud); */
-    /*     window.spinOnce(1, true); */
-    /* } */
+    while (!window.wasStopped()) {
+        window.showWidget("CS", coordinateSystem);
+        window.showWidget("cloud", cloud);
+        window.spinOnce(1, true);
+    }
 }
 
 int main() {

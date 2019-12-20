@@ -6,14 +6,12 @@ namespace slam {
 
 Matcher::Matcher(cv::Ptr<cv::BFMatcher> matcher) : matcher(matcher) {}
 
-void Matcher::frameMatch(
-    const Frame& frame1, const Frame& frame2,
-    std::vector<cv::DMatch>& matches,
+std::vector<cv::DMatch> Matcher::frameMatch(
+    Frame& frame1, Frame& frame2,
     float maximumDistance, float areaSize
 ) {
-    matches.clear();
+    std::vector<cv::DMatch> matches, descriptorMatches;
     bool inArea, checkArea = areaSize != -1;
-    std::vector<cv::DMatch> descriptorMatches;
     cv::Point2f d;
 
     matcher->match(frame1.descriptors, frame2.descriptors, descriptorMatches);
@@ -32,6 +30,8 @@ void Matcher::frameMatch(
         if (inArea && m.distance < maximumDistance)
             matches.push_back(m);
     }
+
+    return matches;
 }
 
 };
