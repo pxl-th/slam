@@ -20,19 +20,18 @@ public:
     /**
      * Find matches between descriptors in given frames.
      *
-     * @param[in] frame1 Frame which will be used to find matches with `frame2`.
-     * @param[in] frame2 Frame which will be used to find mathces with `frame1`
-     * @param[out] matches Output vector which will contain matches.
+     * @param frame1 Frame which will be used to find matches with `frame2`.
+     * @param frame2 Frame which will be used to find mathces with `frame1`
      * @param maximumDistance Maximum distance in terms of Hamming distance.
      * @param areaSize
      *  If you want to find matches for keypoints in an area
      *  in terms of pixel distance between keypoints, then specify distance.
      *  If you want to find matches between all keypoints,
      *  no matter what pixel distace, specify `-1`.
+     * @return matches Output vector which will contain matches.
      */
-    void frameMatch(
-        const Frame& frame1, const Frame& frame2,
-        std::vector<cv::DMatch>& matches,
+    std::vector<cv::DMatch> frameMatch(
+        Frame& frame1, Frame& frame2,
         float maximumDistance, float areaSize = -1
     );
 

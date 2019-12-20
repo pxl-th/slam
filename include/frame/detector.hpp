@@ -27,7 +27,7 @@ public:
      * Which may slightly deviate in case of FAST score.
      */
     void detect(
-        const cv::InputArray& image,
+        cv::InputArray& image,
         std::vector<cv::KeyPoint>& keypoints, cv::OutputArray& descriptors
     );
 

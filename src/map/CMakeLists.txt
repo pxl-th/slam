@@ -1,0 +1,9 @@
+target_sources(main
+    PRIVATE
+    keyframe.cpp
+    map.cpp
+    mappoint.cpp
+    ../../include/map/keyframe.hpp
+    ../../include/map/map.hpp
+    ../../include/map/mappoint.hpp
+)

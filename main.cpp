@@ -6,12 +6,15 @@
 #include<opencv2/imgcodecs.hpp>
 #include<opencv2/viz.hpp>
 
-#include"include/calibration.hpp"
-#include"include/calibration_settings.hpp"
-#include"include/detector.hpp"
-#include"include/frame.hpp"
-#include"include/initializer.hpp"
-#include"include/matcher.hpp"
+#include"include/calibration/calibration.hpp"
+#include"include/calibration/calibration_settings.hpp"
+#include"include/frame/detector.hpp"
+#include"include/frame/frame.hpp"
+#include"include/tracking/initializer.hpp"
+#include"include/map/keyframe.hpp"
+#include"include/frame/matcher.hpp"
+#include"include/map/mappoint.hpp"
+#include"include/map/map.hpp"
 #include"include/loader.hpp"
 
 void test_settings() {
@@ -39,8 +42,7 @@ void test_settings() {
         0, detector, calibration.cameraMatrix, calibration.distortions
     );
 
-    std::vector<cv::DMatch> matches;
-    matcher.frameMatch(frame1, frame2, matches, 300, 50);
+    auto matches = matcher.frameMatch(frame1, frame2, 300, 50);
     std::cout << "Frame matches " << matches.size() << std::endl;
 
     slam::Initializer initializer(frame1);
@@ -48,8 +50,13 @@ void test_settings() {
         initializer.initialize(frame2, matches)
     );
     std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
-    std::cout << translation << std::endl;
+    std::cout << "Translation\n" << translation << std::endl;
 
+    auto map = initializer.initializeMap(
+        frame2, rotation, translation, reconstructedPoints
+    );
+
+    /* Visualization */
     cv::viz::Viz3d window("slam");
     cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white());
     cv::viz::WCoordinateSystem coordinateSystem;
@@ -63,13 +70,4 @@ void test_settings() {
 
 int main() {
     test_settings();
-    /* std::vector<cv::Point3f> p = {cv::Point3f(1, 2, 3), cv::Point3f(4, 5, 6)}; */
-    /* cv::Mat m(4, 3, CV_32F); */
-    /* for (size_t i = 0; i < p.size(); i++) { */
-    /*     m.at<float>(i, 0) = p[i].x; */
-    /*     m.at<float>(i, 1) = p[i].y; */
-    /*     m.at<float>(i, 2) = p[i].z; */
-    /* } */
-    /* std::cout << m << std::endl; */
-    /* std::cout << m.rows << " " << m.cols << std::endl; */
 }

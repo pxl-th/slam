@@ -1,0 +1,9 @@
+target_sources(main
+    PRIVATE
+    detector.cpp
+    frame.cpp
+    matcher.cpp
+    ../../include/frame/detector.hpp
+    ../../include/frame/frame.hpp
+    ../../include/frame/matcher.hpp
+)

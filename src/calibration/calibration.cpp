@@ -5,8 +5,8 @@
 #include<opencv2/imgcodecs.hpp>
 #include<opencv2/imgproc.hpp>
 
-#include"calibration.hpp"
-#include"calibration_settings.hpp"
+#include"calibration/calibration.hpp"
+#include"calibration/calibration_settings.hpp"
 
 namespace slam {
 

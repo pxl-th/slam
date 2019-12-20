@@ -3,22 +3,18 @@
 #include<opencv2/calib3d.hpp>
 
 #include"converter.hpp"
-#include"initializer.hpp"
+#include"tracking/initializer.hpp"
 
 namespace slam {
 
-Initializer::Initializer(const Frame& reference) : reference(reference) {}
+Initializer::Initializer(Frame& reference) : reference(reference) {}
 
 std::tuple<cv::Mat, cv::Mat, cv::Mat, std::vector<cv::Point3f>>
-Initializer::initialize(
-    const Frame& current, const std::vector<cv::DMatch>& matches
-) {
-    std::vector<cv::Point2f>
-        referencePoints, referencePointTmp,
-        currentPoints, currentPointsTmp;
-
+Initializer::initialize(Frame& current, std::vector<cv::DMatch>& matches) {
+    std::vector<cv::Point2f> referencePoints, currentPoints;
     referencePoints.resize(matches.size());
     currentPoints.resize(matches.size());
+    // Copy points from keypoints.
     for (size_t i = 0; i < matches.size(); i++) {
         referencePoints[i] = reference.undistortedKeypoints[matches[i].queryIdx].pt;
         currentPoints[i] = current.undistortedKeypoints[matches[i].trainIdx].pt;
@@ -33,26 +29,30 @@ Initializer::initialize(
         essential, referencePoints, currentPoints,
         reference.cameraMatrix, rotation, translation, inliersMask
     );
-    /* Filter out outliers */
+    // Complete outliers mask and remove outlier points.
+    {
+    std::vector<cv::Point2f> rp, cp;
     for (int i = 0; i < inliersMask.rows; i++) {
         if (inliersMask.at<uchar>(i) == 0 || mask.at<uchar>(i) == 0) {
-            inliersMask.at<uchar>(i) = mask.at<uchar>(i);
+            mask.at<uchar>(i) = inliersMask.at<uchar>(i);
             continue;
         }
-        referencePointTmp.push_back(referencePoints[i]);
-        currentPointsTmp.push_back(currentPoints[i]);
+        rp.push_back(referencePoints[i]);
+        cp.push_back(currentPoints[i]);
     }
-    referencePoints = referencePointTmp;
-    currentPoints = currentPointsTmp;
+    referencePoints = rp; currentPoints = cp;
+    }
 
     cv::Mat firstProjection(3, 4, CV_32F, cv::Scalar(0));
     cv::Mat secondProjection(3, 4, CV_32F, cv::Scalar(0));
 
+    // Calculate projection matrices.
     reference.cameraMatrix.copyTo(firstProjection.rowRange(0, 3).colRange(0, 3));
     rotation.copyTo(secondProjection.rowRange(0, 3).colRange(0, 3));
     translation.copyTo(secondProjection.rowRange(0, 3).col(3));
     secondProjection = reference.cameraMatrix * secondProjection;
 
+    // Reconstruct points.
     cv::Mat reconstructedPointsM, homogeneousPoints;
     cv::triangulatePoints(
         firstProjection, secondProjection,
@@ -68,7 +68,44 @@ Initializer::initialize(
     );
     std::cout << "Reprojection error " << error << std::endl;
 
-    return {rotation, translation, inliersMask, reconstructedPoints};
+    return {rotation, translation, mask, reconstructedPoints};
+}
+
+Map Initializer::initializeMap(
+    const Frame& current, const cv::Mat& rotation, const cv::Mat& translation,
+    std::vector<cv::Point3f> reconstructedPoints
+) {
+    Map map;
+
+    cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
+    rotation.copyTo(pose.rowRange(0, 3).colRange(0, 3));
+    translation.copyTo(pose.rowRange(0, 3).col(3));
+
+    auto referenceKeyFrame = std::shared_ptr<KeyFrame>(new KeyFrame(
+        reference, cv::Mat::eye(4, 4, CV_32F)
+    ));
+    auto currentKeyFrame = std::shared_ptr<KeyFrame>(new KeyFrame(
+        reference, pose
+    ));
+
+    map.addKeyframe(referenceKeyFrame);
+    map.addKeyframe(currentKeyFrame);
+
+    for (const auto& p : reconstructedPoints) {
+        auto mapPoint = std::shared_ptr<MapPoint>(new MapPoint(
+            p, currentKeyFrame
+        ));
+
+        mapPoint->addObservation(referenceKeyFrame);
+        mapPoint->addObservation(currentKeyFrame);
+
+        referenceKeyFrame->addMapPoint(mapPoint);
+        currentKeyFrame->addMapPoint(mapPoint);
+
+        map.addMappoint(mapPoint);
+    }
+
+    return map;
 }
 
 float Initializer::_reprojectionError(

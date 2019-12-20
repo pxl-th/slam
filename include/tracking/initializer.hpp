@@ -1,17 +1,16 @@
 #include<tuple>
 
-#include"frame.hpp"
+#include"frame/frame.hpp"
+#include"map/map.hpp"
 
 namespace slam {
 
 class Initializer {
 public:
-    const Frame& reference;
+    Frame& reference;
 
 public:
-    Initializer(const Frame& reference);
-    ~Initializer() = default;
-
+    Initializer(Frame& reference);
     /**
      * Given `current` frame and matches between
      * `reference` and `current` frames, find initial reconstruction.
@@ -24,7 +23,12 @@ public:
      * reconstructed feature points
      */
     std::tuple<cv::Mat, cv::Mat, cv::Mat, std::vector<cv::Point3f>>
-    initialize(const Frame& current, const std::vector<cv::DMatch>& matches);
+    initialize(Frame& current, std::vector<cv::DMatch>& matches);
+
+    Map initializeMap(
+        const Frame& current, const cv::Mat& rotation, const cv::Mat& translation,
+        std::vector<cv::Point3f> reconstructedPoints
+    );
 
 private:
     float _reprojectionError(
