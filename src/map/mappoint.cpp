@@ -2,23 +2,23 @@
 
 namespace slam {
 
-MapPoint::MapPoint(int id, KeyFrame& keyframe, const cv::Mat& position)
-    : id(id), keyframe(keyframe) {
-    position.copyTo(this->position);
+MapPoint::MapPoint(const cv::Point3f& position, std::shared_ptr<KeyFrame> keyframe)
+    : position(position), keyframe(keyframe) {}
+
+cv::Point3f MapPoint::getWorldPos() const { return position; }
+
+void MapPoint::setWorldPos(const cv::Point3f& newPos) { position = newPos; }
+
+std::shared_ptr<KeyFrame> MapPoint::getReferenceKeyframe() const {
+    return keyframe;
 }
 
-cv::Mat MapPoint::getWorlPos() const { return position.clone(); }
-
-void MapPoint::setWorldPos(const cv::Mat& newPos) { newPos.copyTo(position); }
-
-KeyFrame& MapPoint::getReferenceKeyframe() const { return keyframe; }
-
-std::map<KeyFrame*, int> MapPoint::getObservations() const {
+std::set<std::shared_ptr<KeyFrame>> MapPoint::getObservations() const {
     return observations;
 }
 
-void MapPoint::addObservation(KeyFrame& keyframe, int id) {
-    observations[&keyframe] = id;
+void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframe) {
+    observations.insert(keyframe);
 }
 
 };

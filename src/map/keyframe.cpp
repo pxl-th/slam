@@ -2,8 +2,7 @@
 
 namespace slam {
 
-KeyFrame::KeyFrame(int id, const Frame& frame, const cv::Mat& pose)
-    : id(id), frame(frame) {
+KeyFrame::KeyFrame(const Frame& frame, const cv::Mat& pose) : frame(frame) {
     setPose(pose);
 }
 
@@ -18,5 +17,13 @@ void KeyFrame::setPose(const cv::Mat& pose) {
 cv::Mat KeyFrame::getPose() const { return pose.clone(); }
 
 cv::Mat KeyFrame::getCameraCenter() const { return cameraCenter.clone(); }
+
+void KeyFrame::addMapPoint(std::shared_ptr<MapPoint> mapPoint) {
+    mapPoints.insert(mapPoint);
+}
+
+std::set<std::shared_ptr<MapPoint>> KeyFrame::getMapPoints() const {
+    return mapPoints;
+}
 
 };

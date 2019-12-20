@@ -1,29 +1,30 @@
 #ifndef MAPPOINT_H
 #define MAPPOINT_H
 
-#include<map>
+#include<set>
 
 #include"keyframe.hpp"
 
 namespace slam {
 
+class KeyFrame;
+
 class MapPoint {
 private:
-    int id;
-    KeyFrame& keyframe;
-    std::map<KeyFrame*, int> observations;
+    std::shared_ptr<KeyFrame> keyframe;
+    std::set<std::shared_ptr<KeyFrame>> observations;
 
-    cv::Mat position;
+    cv::Point3f position;
 public:
-    MapPoint(int id, KeyFrame& keyframe, const cv::Mat& position);
+    MapPoint(const cv::Point3f& position, std::shared_ptr<KeyFrame> keyframe);
 
-    KeyFrame& getReferenceKeyframe() const;
+    std::shared_ptr<KeyFrame> getReferenceKeyframe() const;
 
-    cv::Mat getWorlPos() const;
-    void setWorldPos(const cv::Mat& newPos);
+    cv::Point3f getWorldPos() const;
+    void setWorldPos(const cv::Point3f& newPos);
 
-    std::map<KeyFrame*, int> getObservations() const;
-    void addObservation(KeyFrame& keyframe, int id);
+    std::set<std::shared_ptr<KeyFrame>> getObservations() const;
+    void addObservation(std::shared_ptr<KeyFrame> keyframe);
 };
 
 };

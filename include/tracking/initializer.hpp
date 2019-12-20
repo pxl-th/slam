@@ -1,6 +1,7 @@
 #include<tuple>
 
 #include"frame/frame.hpp"
+#include"map/map.hpp"
 
 namespace slam {
 
@@ -25,6 +26,11 @@ public:
      */
     std::tuple<cv::Mat, cv::Mat, cv::Mat, std::vector<cv::Point3f>>
     initialize(const Frame& current, const std::vector<cv::DMatch>& matches);
+
+    Map initializeMap(
+        const Frame& current, const cv::Mat& rotation, const cv::Mat& translation,
+        std::vector<cv::Point3f> reconstructedPoints
+    );
 
 private:
     float _reprojectionError(

@@ -51,25 +51,25 @@ void test_settings() {
         initializer.initialize(frame2, matches)
     );
     std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
-    std::cout << "Translation " << translation << std::endl;
+    std::cout << "Translation\n" << translation << std::endl;
 
-    slam::Map map;
+    auto map = initializer.initializeMap(
+        frame2, rotation, translation, reconstructedPoints
+    );
     /**
-     * TODO:
-     * - populate map
-     * - create tracker, reorganize code
+     * use inliersMask to filter out matches
      */
 
     /* Visualization */
-    cv::viz::Viz3d window("slam");
-    cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white());
-    cv::viz::WCoordinateSystem coordinateSystem;
+    /* cv::viz::Viz3d window("slam"); */
+    /* cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white()); */
+    /* cv::viz::WCoordinateSystem coordinateSystem; */
 
-    while (!window.wasStopped()) {
-        window.showWidget("CS", coordinateSystem);
-        window.showWidget("cloud", cloud);
-        window.spinOnce(1, true);
-    }
+    /* while (!window.wasStopped()) { */
+    /*     window.showWidget("CS", coordinateSystem); */
+    /*     window.showWidget("cloud", cloud); */
+    /*     window.spinOnce(1, true); */
+    /* } */
 }
 
 int main() {

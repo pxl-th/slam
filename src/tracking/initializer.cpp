@@ -71,6 +71,43 @@ Initializer::initialize(
     return {rotation, translation, inliersMask, reconstructedPoints};
 }
 
+Map Initializer::initializeMap(
+    const Frame& current, const cv::Mat& rotation, const cv::Mat& translation,
+    std::vector<cv::Point3f> reconstructedPoints
+) {
+    Map map;
+
+    cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
+    rotation.copyTo(pose.rowRange(0, 3).colRange(0, 3));
+    translation.copyTo(pose.rowRange(0, 3).col(3));
+
+    auto referenceKeyFrame = std::shared_ptr<KeyFrame>(new KeyFrame(
+        reference, cv::Mat::eye(4, 4, CV_32F)
+    ));
+    auto currentKeyFrame = std::shared_ptr<KeyFrame>(new KeyFrame(
+        reference, pose
+    ));
+
+    map.addKeyframe(referenceKeyFrame);
+    map.addKeyframe(currentKeyFrame);
+
+    for (const auto& p : reconstructedPoints) {
+        auto mapPoint = std::shared_ptr<MapPoint>(new MapPoint(
+            p, currentKeyFrame
+        ));
+
+        mapPoint->addObservation(referenceKeyFrame);
+        mapPoint->addObservation(currentKeyFrame);
+
+        referenceKeyFrame->addMapPoint(mapPoint);
+        currentKeyFrame->addMapPoint(mapPoint);
+
+        map.addMappoint(mapPoint);
+    }
+
+    return map;
+}
+
 float Initializer::_reprojectionError(
     std::vector<cv::Point2f>& imagePoints,
     std::vector<cv::Point3f>& objectPoints,
