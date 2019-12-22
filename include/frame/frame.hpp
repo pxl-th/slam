@@ -1,9 +1,11 @@
 #ifndef FRAME_H
 #define FRAME_H
 
+#pragma warning(push, 0)
 #include<vector>
 
 #include<opencv2/core.hpp>
+#pragma warning(pop)
 
 #include"detector.hpp"
 

@@ -1,8 +1,10 @@
 #ifndef MAP_H
 #define MAP_H
 
+#pragma warning(push, 0)
 #include<memory>
 #include<vector>
+#pragma warning(pop)
 
 #include"mappoint.hpp"
 #include"keyframe.hpp"

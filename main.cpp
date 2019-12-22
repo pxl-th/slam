@@ -1,3 +1,4 @@
+#pragma warning(push, 0)
 #include<iostream>
 #include<string>
 
@@ -5,6 +6,7 @@
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgcodecs.hpp>
 #include<opencv2/viz.hpp>
+#pragma warning(pop)
 
 #include"include/calibration/calibration.hpp"
 #include"include/calibration/calibration_settings.hpp"
@@ -46,14 +48,15 @@ void test_settings() {
     std::cout << "Frame matches " << matches.size() << std::endl;
 
     slam::Initializer initializer(frame1);
-    auto [rotation, translation, inliersMask, reconstructedPoints] = (
+    auto [rotation, translation, mask, reconstructedPoints] = (
         initializer.initialize(frame2, matches)
     );
     std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
     std::cout << "Translation\n" << translation << std::endl;
 
     auto map = initializer.initializeMap(
-        frame2, rotation, translation, reconstructedPoints
+        frame2, rotation, translation, reconstructedPoints,
+        matches, mask
     );
 
     /* Visualization */

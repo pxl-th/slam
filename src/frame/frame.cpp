@@ -1,9 +1,11 @@
+#pragma warning(push, 0)
 #include<algorithm>
 #include<iostream>
 
 #include<opencv2/core.hpp>
 #include<opencv2/core/types.hpp>
 #include<opencv2/calib3d.hpp>
+#pragma warning(pop)
 
 #include"frame/frame.hpp"
 

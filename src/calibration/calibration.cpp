@@ -1,9 +1,11 @@
+#pragma warning(push, 0)
 #include<iostream>
 
 #include<opencv2/calib3d.hpp>
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgcodecs.hpp>
 #include<opencv2/imgproc.hpp>
+#pragma warning(pop)
 
 #include"calibration/calibration.hpp"
 #include"calibration/calibration_settings.hpp"
@@ -23,7 +25,7 @@ Calibration::_findPoints(
 ) {
     std::vector<std::vector<cv::Point2f>> imagePoints;
     cv::Size imageSize;
-    float scale;
+    float scale = 1.0f;
 
     for (const std::string& image_file : settings.images) {
         std::cout << "Processing image " << image_file << std::endl;

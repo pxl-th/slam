@@ -1,11 +1,13 @@
 #ifndef CALIBRATION_H
 #define CALIBRATION_H
 
+#pragma warning(push, 0)
 #include<string>
 #include<tuple>
 #include<vector>
 
 #include<opencv2/core.hpp>
+#pragma warning(pop)
 
 #include"calibration_settings.hpp"
 

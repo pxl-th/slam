@@ -1,6 +1,9 @@
+#pragma warning(push, 0)
 #include<iostream>
+
 #include<opencv2/core.hpp>
 #include<opencv2/calib3d.hpp>
+#pragma warning(pop)
 
 #include"converter.hpp"
 #include"tracking/initializer.hpp"
@@ -34,7 +37,8 @@ Initializer::initialize(Frame& current, std::vector<cv::DMatch>& matches) {
     std::vector<cv::Point2f> rp, cp;
     for (int i = 0; i < inliersMask.rows; i++) {
         if (inliersMask.at<uchar>(i) == 0 || mask.at<uchar>(i) == 0) {
-            mask.at<uchar>(i) = inliersMask.at<uchar>(i);
+            if (inliersMask.at<uchar>(i) == 0)
+                mask.at<uchar>(i) = inliersMask.at<uchar>(i);
             continue;
         }
         rp.push_back(referencePoints[i]);
@@ -73,7 +77,8 @@ Initializer::initialize(Frame& current, std::vector<cv::DMatch>& matches) {
 
 Map Initializer::initializeMap(
     const Frame& current, const cv::Mat& rotation, const cv::Mat& translation,
-    std::vector<cv::Point3f> reconstructedPoints
+    const std::vector<cv::Point3f>& reconstructedPoints,
+    const std::vector<cv::DMatch>& matches, const cv::Mat& outliersMask
 ) {
     Map map;
 
@@ -88,16 +93,18 @@ Map Initializer::initializeMap(
         reference, pose
     ));
 
+    // reference -- query, current -- train
     map.addKeyframe(referenceKeyFrame);
     map.addKeyframe(currentKeyFrame);
 
-    for (const auto& p : reconstructedPoints) {
-        auto mapPoint = std::shared_ptr<MapPoint>(new MapPoint(
-            p, currentKeyFrame
-        ));
+    for (size_t i = 0, j = 0; i < matches.size(); i++) {
+        if (outliersMask.at<uchar>(i) == 0) continue;
 
-        mapPoint->addObservation(referenceKeyFrame);
-        mapPoint->addObservation(currentKeyFrame);
+        auto mapPoint = std::shared_ptr<MapPoint>(new MapPoint(
+            reconstructedPoints[j++], currentKeyFrame
+        ));
+        mapPoint->addObservation(referenceKeyFrame, matches[i].queryIdx);
+        mapPoint->addObservation(currentKeyFrame, matches[i].trainIdx);
 
         referenceKeyFrame->addMapPoint(mapPoint);
         currentKeyFrame->addMapPoint(mapPoint);

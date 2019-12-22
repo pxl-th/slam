@@ -1,4 +1,6 @@
+#pragma warning(push, 0)
 #include<tuple>
+#pragma warning(pop)
 
 #include"frame/frame.hpp"
 #include"map/map.hpp"
@@ -27,7 +29,8 @@ public:
 
     Map initializeMap(
         const Frame& current, const cv::Mat& rotation, const cv::Mat& translation,
-        std::vector<cv::Point3f> reconstructedPoints
+        const std::vector<cv::Point3f>& reconstructedPoints,
+        const std::vector<cv::DMatch>& matches, const cv::Mat& outliersMask
     );
 
 private:
