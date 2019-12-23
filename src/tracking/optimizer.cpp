@@ -17,7 +17,6 @@ namespace slam {
 namespace optimizer {
 
 void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
-    const float thHuber = sqrt(5.991);
     auto keyframes = map->getKeyframes();
     auto mappoints = map->getMappoints();
     std::cout
@@ -60,12 +59,14 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
         optimizer.addVertex(point);
 
         // Set edges.
+        // Each edge connects current mappoint vertex with
+        // every keyframe vertex, that it is visible from.
+        // With edge's observation being a keyframe's keypoint.
         auto observations = mappoint->getObservations();
         for (const auto& [keyframe, keypointId] : observations) {
             auto keypoint = keyframe->getFrame().undistortedKeypoints[keypointId];
             auto edge = new g2o::EdgeSE3ProjectXYZ();
             auto kernel = new g2o::RobustKernelHuber();
-            kernel->setDelta(thHuber);
 
             Eigen::Matrix<double, 2, 1> observation;
             observation << keypoint.pt.x, keypoint.pt.y;
@@ -100,6 +101,7 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
     optimizer.optimize(iterations);
     std::cout << "[optimization] Optimization finished" << std::endl;
 
+    // Update map with optimized hypergraph.
     for (auto& keyframe : keyframes) {
         auto vertex = dynamic_cast<g2o::VertexSE3Expmap*>(
             optimizer.vertex(keyframe->id)

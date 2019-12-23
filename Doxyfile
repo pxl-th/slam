@@ -1,6 +1,7 @@
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = "slam"
 OUTPUT_DIRECTORY       = ./docs
+INPUT                  = ./include ./src
 
 EXTRACT_ALL            = NO
 EXTRACT_PRIVATE        = NO
