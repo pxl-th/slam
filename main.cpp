@@ -55,18 +55,22 @@ void test_settings() {
     std::cout << "Translation\n" << translation << std::endl;
 
     auto map = initializer.initializeMap(
-        frame2, rotation, translation, reconstructedPoints,
-        matches, mask
+        frame2, rotation, translation, reconstructedPoints, matches, mask
     );
+    std::vector<cv::Point3f> adjustedPoints;
+    for (const auto& p : map->getMappoints())
+        adjustedPoints.push_back(p->getWorldPos());
 
     /* Visualization */
     cv::viz::Viz3d window("slam");
-    cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white());
+    cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::green()),
+        cloudOp(adjustedPoints, cv::viz::Color::red());
     cv::viz::WCoordinateSystem coordinateSystem;
 
     while (!window.wasStopped()) {
         window.showWidget("CS", coordinateSystem);
         window.showWidget("cloud", cloud);
+        window.showWidget("cloudOp", cloudOp);
         window.spinOnce(1, true);
     }
 }

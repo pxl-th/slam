@@ -4,12 +4,11 @@
 #include"map/map.hpp"
 
 namespace slam {
+namespace optimizer {
 
-class Optimizer {
-public:
-    static void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations);
+void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations);
+
 };
-
 };
 
 #endif

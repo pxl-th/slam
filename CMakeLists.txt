@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 17)
 
-project(slam)
+project(slam
+    VERSION 0.1
+    DESCRIPTION "Implementation of the Monocular SLAM algorithm"
+    LANGUAGES CXX
+)
 
 find_package(OpenCV CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
@@ -19,7 +23,7 @@ target_compile_options(main
     -Wall
     -wd5045 # Spectre related stuff
 )
-target_include_directories(main PRIVATE "${CMAKE_SOURCE_DIR}/include")
+target_include_directories(main PRIVATE include)
 target_link_libraries(main
     PRIVATE
     ${OpenCV_LIBS}

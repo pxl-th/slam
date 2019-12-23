@@ -7,6 +7,7 @@
 
 #include"converter.hpp"
 #include"tracking/initializer.hpp"
+#include"tracking/optimizer.hpp"
 
 namespace slam {
 
@@ -71,16 +72,15 @@ Initializer::initialize(Frame& current, std::vector<cv::DMatch>& matches) {
         reference.cameraMatrix, reference.distortions
     );
     std::cout << "Reprojection error " << error << std::endl;
-
     return {rotation, translation, mask, reconstructedPoints};
 }
 
-Map Initializer::initializeMap(
+std::shared_ptr<Map> Initializer::initializeMap(
     const Frame& current, const cv::Mat& rotation, const cv::Mat& translation,
     const std::vector<cv::Point3f>& reconstructedPoints,
     const std::vector<cv::DMatch>& matches, const cv::Mat& outliersMask
 ) {
-    Map map;
+    auto map = std::shared_ptr<Map>(new Map());
 
     cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
     rotation.copyTo(pose.rowRange(0, 3).colRange(0, 3));
@@ -90,28 +90,29 @@ Map Initializer::initializeMap(
         reference, cv::Mat::eye(4, 4, CV_32F)
     ));
     auto currentKeyFrame = std::shared_ptr<KeyFrame>(new KeyFrame(
-        reference, pose
+        current, pose
     ));
 
     // reference -- query, current -- train
-    map.addKeyframe(referenceKeyFrame);
-    map.addKeyframe(currentKeyFrame);
+    map->addKeyframe(referenceKeyFrame);
+    map->addKeyframe(currentKeyFrame);
 
     for (size_t i = 0, j = 0; i < matches.size(); i++) {
         if (outliersMask.at<uchar>(i) == 0) continue;
 
-        auto mapPoint = std::shared_ptr<MapPoint>(new MapPoint(
+        auto mappoint = std::shared_ptr<MapPoint>(new MapPoint(
             reconstructedPoints[j++], currentKeyFrame
         ));
-        mapPoint->addObservation(referenceKeyFrame, matches[i].queryIdx);
-        mapPoint->addObservation(currentKeyFrame, matches[i].trainIdx);
+        mappoint->addObservation(referenceKeyFrame, matches[i].queryIdx);
+        mappoint->addObservation(currentKeyFrame, matches[i].trainIdx);
 
-        referenceKeyFrame->addMapPoint(mapPoint);
-        currentKeyFrame->addMapPoint(mapPoint);
+        referenceKeyFrame->addMapPoint(mappoint);
+        currentKeyFrame->addMapPoint(mappoint);
 
-        map.addMappoint(mapPoint);
+        map->addMappoint(mappoint);
     }
 
+    optimizer::globalBundleAdjustment(map, 20);
     return map;
 }
 
@@ -136,9 +137,7 @@ float Initializer::_reprojectionError(
         d = imagePoints[i] - reprojectedPoints[i];
         score += std::sqrt(d.x * d.x + d.y * d.y);
     }
-    score /= imagePoints.size();
-
-    return score;
+    return score / imagePoints.size();
 }
 
 };

@@ -21,6 +21,19 @@ Frame::Frame(
     detector.detect(image, keypoints, descriptors);
     if (keypoints.empty()) return;
     _undistortKeyPoints();
+
+    // Calculate scales for each level in detector's pyramid.
+    // This will be used in Bundle Adjustment as edge's information.
+    const double scale = detector.getScaleFactor();
+    sigma.push_back(1.0f);
+    invSigma.push_back(1.0f);
+    scales.push_back(1.0f);
+
+    for (int i = 1; i < detector.getLevels(); i++) {
+        scales.push_back(scales[i - 1] * scale);
+        sigma.push_back(scales[i] * scales[i]);
+        invSigma.push_back(1.0f / sigma[i]);
+    }
 }
 
 void Frame::_undistortKeyPoints() {

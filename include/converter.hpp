@@ -59,10 +59,25 @@ inline g2o::SE3Quat matToSE3Quat(const cv::Mat& m) {
     return g2o::SE3Quat(R, t);
 }
 
+inline cv::Mat se3QuatToMat(const g2o::SE3Quat& q) {
+    Eigen::Matrix<double, 4, 4> h = q.to_homogeneous_matrix();
+    cv::Mat m(4, 4, CV_32F);
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            m.at<float>(i, j) = h(i, j);
+    return m.clone();
+}
+
 inline Eigen::Matrix<double, 3, 1> pointToVec3d(const cv::Point3f& p) {
     Eigen::Matrix<double, 3, 1> v;
     v << p.x, p.y, p.z;
     return v;
+}
+
+inline cv::Point3f vec3dToPoint3f(const Eigen::Matrix<double, 3, 1>& m) {
+    cv::Point3f p;
+    p.x = m[0]; p.y = m[1]; p.z = m[2];
+    return p;
 }
 
 };
