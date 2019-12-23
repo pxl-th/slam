@@ -1,3 +1,4 @@
+#pragma warning(push, 0)
 #include<iostream>
 #include<string>
 
@@ -5,6 +6,7 @@
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgcodecs.hpp>
 #include<opencv2/viz.hpp>
+#pragma warning(pop)
 
 #include"include/calibration/calibration.hpp"
 #include"include/calibration/calibration_settings.hpp"
@@ -46,24 +48,29 @@ void test_settings() {
     std::cout << "Frame matches " << matches.size() << std::endl;
 
     slam::Initializer initializer(frame1);
-    auto [rotation, translation, inliersMask, reconstructedPoints] = (
+    auto [rotation, translation, mask, reconstructedPoints] = (
         initializer.initialize(frame2, matches)
     );
     std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
     std::cout << "Translation\n" << translation << std::endl;
 
     auto map = initializer.initializeMap(
-        frame2, rotation, translation, reconstructedPoints
+        frame2, rotation, translation, reconstructedPoints, matches, mask
     );
+    std::vector<cv::Point3f> adjustedPoints;
+    for (const auto& p : map->getMappoints())
+        adjustedPoints.push_back(p->getWorldPos());
 
     /* Visualization */
     cv::viz::Viz3d window("slam");
-    cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::white());
+    cv::viz::WCloud cloud(reconstructedPoints, cv::viz::Color::green()),
+        cloudOp(adjustedPoints, cv::viz::Color::red());
     cv::viz::WCoordinateSystem coordinateSystem;
 
     while (!window.wasStopped()) {
         window.showWidget("CS", coordinateSystem);
         window.showWidget("cloud", cloud);
+        window.showWidget("cloudOp", cloudOp);
         window.spinOnce(1, true);
     }
 }

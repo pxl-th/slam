@@ -1,6 +1,8 @@
+#pragma warning(push, 0)
 #include<iostream>
 
 #include<opencv2/calib3d.hpp>
+#pragma warning(pop)
 
 #include"calibration/calibration_settings.hpp"
 

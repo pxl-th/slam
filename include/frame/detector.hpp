@@ -1,9 +1,11 @@
 #ifndef DETECTOR_H
 #define DETECTOR_H
 
+#pragma warning(push, 0)
 #include<vector>
 
 #include<opencv2/features2d.hpp>
+#pragma warning(pop)
 
 namespace slam {
 

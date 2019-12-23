@@ -1,11 +1,13 @@
 #ifndef CALIBRATION_SETTINGS_H
 #define CALIBRATION_SETTINGS_H
 
+#pragma warning(push, 0)
 #include<string>
 #include<vector>
 #include<optional>
 
 #include<opencv2/core.hpp>
+#pragma warning(pop)
 
 namespace slam {
 

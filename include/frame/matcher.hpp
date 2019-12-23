@@ -1,9 +1,11 @@
 #ifndef MATCHER_H
 #define MATCHER_H
 
+#pragma warning(push, 0)
 #include<vector>
 
 #include<opencv2/features2d.hpp>
+#pragma warning(pop)
 
 #include"frame.hpp"
 

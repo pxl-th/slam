@@ -13,12 +13,12 @@ std::shared_ptr<KeyFrame> MapPoint::getReferenceKeyframe() const {
     return keyframe;
 }
 
-std::set<std::shared_ptr<KeyFrame>> MapPoint::getObservations() const {
+std::map<std::shared_ptr<KeyFrame>, int> MapPoint::getObservations() const {
     return observations;
 }
 
-void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframe) {
-    observations.insert(keyframe);
+void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframe, int id) {
+    observations[keyframe] = id;
 }
 
 };

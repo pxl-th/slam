@@ -4,7 +4,11 @@
 #ifndef LOADER_H
 #define LOADER_H
 
+#pragma warning(push, 0)
+#include<iostream>
+
 #include<opencv2/core.hpp>
+#pragma warning(pop)
 
 namespace slam {
 
