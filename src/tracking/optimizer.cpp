@@ -116,5 +116,77 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
     }
 }
 
+void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
+    auto algorithm = new g2o::OptimizationAlgorithmLevenberg(
+        g2o::make_unique<g2o::BlockSolverX>(
+            g2o::make_unique<g2o::LinearSolverEigen<g2o::BlockSolverX::PoseMatrixType>>()
+        )
+    );
+    g2o::SparseOptimizer optimizer;
+    optimizer.setAlgorithm(algorithm);
+
+    // Set keyframe vertex.
+    auto vertex = new g2o::VertexSE3Expmap();
+    vertex->setEstimate(matToSE3Quat(keyframe->getPose()));
+    vertex->setFixed(false);
+    vertex->setId(0);
+    optimizer.addVertex(vertex);
+
+    auto edgeVertex = dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+        optimizer.vertex(0)
+    );
+
+    // Set mappoints vertices.
+    int id = 1;
+    for (const auto& p : keyframe->getMapPoints()) {
+        int keypointId = p->getObservations()[keyframe];
+
+        auto kernel = new g2o::RobustKernelHuber();
+        auto vertexMP = new g2o::VertexSBAPointXYZ();
+        auto keypoint = keyframe->getFrame().undistortedKeypoints[keypointId];
+
+        vertexMP->setEstimate(pointToVec3d(p->getWorldPos()));
+        vertexMP->setFixed(true);
+        vertexMP->setId(id);
+
+        Eigen::Matrix<double, 2, 1> observation;
+        observation << keypoint.pt.x, keypoint.pt.y;
+
+        optimizer.addVertex(vertexMP);
+
+        // Set edge.
+        // Edge connects current mappoint vertex with keyframe vertex.
+        auto edge = new g2o::EdgeSE3ProjectXYZ();
+        edge->setVertex(0, edgeVertex);
+        edge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+            optimizer.vertex(id)
+        ));
+        edge->setMeasurement(observation);
+        edge->setInformation(
+            Eigen::Matrix2d::Identity()
+            * keyframe->getFrame().invSigma[keypoint.octave]
+        );
+        edge->setRobustKernel(kernel);
+        edge->setLevel(0);
+
+        edge->fx = keyframe->getFrame().cameraMatrix.at<float>(0, 0);
+        edge->fy = keyframe->getFrame().cameraMatrix.at<float>(1, 1);
+        edge->cx = keyframe->getFrame().cameraMatrix.at<float>(0, 2);
+        edge->cy = keyframe->getFrame().cameraMatrix.at<float>(1, 2);
+
+        optimizer.addEdge(edge);
+        id++;
+    }
+
+    optimizer.initializeOptimization();
+    optimizer.optimize(iterations);
+
+    // Recover optimized pose.
+    auto keyframeVertex = dynamic_cast<g2o::VertexSE3Expmap*>(
+        optimizer.vertex(0)
+    );
+    keyframe->setPose(se3QuatToMat(keyframeVertex->estimate()));
+}
+
 };
 };

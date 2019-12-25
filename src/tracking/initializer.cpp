@@ -82,6 +82,7 @@ std::shared_ptr<Map> Initializer::initializeMap(
 ) {
     auto map = std::shared_ptr<Map>(new Map());
 
+    // Construct transformation matrix out of rotation and translation.
     cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
     rotation.copyTo(pose.rowRange(0, 3).colRange(0, 3));
     translation.copyTo(pose.rowRange(0, 3).col(3));
@@ -97,6 +98,7 @@ std::shared_ptr<Map> Initializer::initializeMap(
     map->addKeyframe(referenceKeyFrame);
     map->addKeyframe(currentKeyFrame);
 
+    // Add observations to mappoints and add mappoints to map.
     for (size_t i = 0, j = 0; i < matches.size(); i++) {
         if (outliersMask.at<uchar>(i) == 0) continue;
 
@@ -113,6 +115,20 @@ std::shared_ptr<Map> Initializer::initializeMap(
     }
 
     optimizer::globalBundleAdjustment(map, 20);
+
+    float inverseMedianDepth = 1.0f / referenceKeyFrame->medianDepth();
+    // TODO: assert that depth is positive
+
+    // Scale translation by inverse median depth.
+    auto currentPose = currentKeyFrame->getPose();
+    currentPose.col(3).rowRange(0, 3) = (
+        currentPose.col(3).rowRange(0, 3) * inverseMedianDepth
+    );
+    currentKeyFrame->setPose(currentPose);
+    // Scale mappoints by inverse median depth.
+    for (auto p : referenceKeyFrame->getMapPoints())
+        p->setWorldPos(p->getWorldPos() * inverseMedianDepth);
+
     return map;
 }
 

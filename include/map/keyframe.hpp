@@ -2,7 +2,7 @@
 #define KEYFRAME_H
 
 #pragma warning(push, 0)
-#include<set>
+#include<vector>
 
 #include<opencv2/core.hpp>
 #pragma warning(pop)
@@ -25,7 +25,7 @@ private:
     /**
      * Set of MapPoints that are visible from this KeyFrame.
      */
-    std::set<std::shared_ptr<MapPoint>> mapPoints;
+    std::vector<std::shared_ptr<MapPoint>> mapPoints;
 public:
     static unsigned long long globalID;
     unsigned long long id;
@@ -47,7 +47,24 @@ public:
 
     void addMapPoint(std::shared_ptr<MapPoint> mapPoint);
 
-    std::set<std::shared_ptr<MapPoint>> getMapPoints() const;
+    std::vector<std::shared_ptr<MapPoint>> getMapPoints() const;
+
+    /**
+     * Calculate median depth of the mappoints, visible in this keyframe,\n
+     * by calculating depth for all visible mappoints and getting their median.\n
+     * Depth for mappoint \f$ p_i \f$ is calculated as follows:\n
+     *
+     * \f$
+     * d_i = T_d \cdot p_i + z, T_d = T[2, 0:3]^T, z = T[2, 3]
+     * \f$
+     *
+     * where \f$ T \f$ --- keyframe's pose matrix,\n
+     * \f$T_d\f$ --- extracted depth transformation from \f$ T \f$,\n
+     * \f$ z \f$ --- depth translation.
+     *
+     * @return Median depth.
+     */
+    float medianDepth() const;
 };
 
 };
