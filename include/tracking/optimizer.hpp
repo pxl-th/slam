@@ -25,7 +25,22 @@ namespace optimizer {
  * @param map Map on which to perform BA.
  * @param iterations Number of iterations to perform optimization.
  */
-void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations);
+void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations = 20);
+
+/**
+ * Perform keyframe's pose optimization.
+ *
+ * Build a hypergraph with keyframe vertex
+ * and keyframe's mappoints vertices.\n
+ * With keyframe vertex estimate being a pose that we want to optimize
+ * and mappoint vertex estimate --- it's world position.\n
+ * Edges connect each mappoint vertex to keyframe vertex
+ * with edge's measurement being mappoint's keypoint coordinates.\n
+ *
+ * @param keyframe KeyFrame which pose we want to optimize.
+ * @param iterations Number of optimization iterations.
+ */
+void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations = 20);
 
 };
 };
