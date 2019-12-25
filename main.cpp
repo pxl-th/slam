@@ -69,7 +69,7 @@ void test_settings() {
 
     while (!window.wasStopped()) {
         window.showWidget("CS", coordinateSystem);
-        window.showWidget("cloud", cloud);
+        /* window.showWidget("cloud", cloud); */
         window.showWidget("cloudOp", cloudOp);
         window.spinOnce(1, true);
     }
