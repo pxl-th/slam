@@ -17,8 +17,8 @@ std::map<std::shared_ptr<KeyFrame>, int> MapPoint::getObservations() const {
     return observations;
 }
 
-void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframe, int id) {
-    observations[keyframe] = id;
+void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframeO, int id) {
+    observations[keyframeO] = id;
 }
 
 };

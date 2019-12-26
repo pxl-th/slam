@@ -12,7 +12,7 @@ inline cv::Mat matFromVector(const std::vector<cv::Point2f>& p) {
     int size = static_cast<int>(p.size());
     cv::Mat m(size, 2, CV_32F);
     for (int i = 0; i < size; i++) {
-        const auto& t = p[i];
+        const auto& t = p[static_cast<size_t>(i)];
         m.at<float>(i, 0) = t.x;
         m.at<float>(i, 1) = t.y;
     }
@@ -23,7 +23,7 @@ inline cv::Mat matFromVector(const std::vector<cv::Point3f>& p) {
     int size = static_cast<int>(p.size());
     cv::Mat m(size, 3, CV_32F);
     for (int i = 0; i < size; i++) {
-        const auto& t = p[i];
+        const auto& t = p[static_cast<size_t>(i)];
         m.at<float>(i, 0) = t.x;
         m.at<float>(i, 1) = t.y;
         m.at<float>(i, 2) = t.z;
@@ -64,7 +64,7 @@ inline cv::Mat se3QuatToMat(const g2o::SE3Quat& q) {
     cv::Mat m(4, 4, CV_32F);
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            m.at<float>(i, j) = h(i, j);
+            m.at<float>(i, j) = static_cast<float>(h(i, j));
     return m.clone();
 }
 
@@ -76,7 +76,9 @@ inline Eigen::Matrix<double, 3, 1> pointToVec3d(const cv::Point3f& p) {
 
 inline cv::Point3f vec3dToPoint3f(const Eigen::Matrix<double, 3, 1>& m) {
     cv::Point3f p;
-    p.x = m[0]; p.y = m[1]; p.z = m[2];
+    p.x = static_cast<float>(m[0]);
+    p.y = static_cast<float>(m[1]);
+    p.z = static_cast<float>(m[2]);
     return p;
 }
 

@@ -16,9 +16,8 @@ private:
     cv::Ptr<cv::BFMatcher> matcher;
 
 public:
+    Matcher() : matcher(cv::BFMatcher::create(cv::BFMatcher::BRUTEFORCE_HAMMING, true)) {}
     Matcher(cv::Ptr<cv::BFMatcher> matcher);
-    ~Matcher() = default;
-
     /**
      * Find matches between descriptors in given frames.
      *
@@ -33,7 +32,7 @@ public:
      * @return matches Output vector which will contain matches.
      */
     std::vector<cv::DMatch> frameMatch(
-        Frame& frame1, Frame& frame2,
+        std::shared_ptr<Frame> frame1, std::shared_ptr<Frame> frame2,
         float maximumDistance, float areaSize = -1
     );
 

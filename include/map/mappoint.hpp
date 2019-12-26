@@ -25,7 +25,7 @@ public:
     void setWorldPos(const cv::Point3f& newPos);
 
     std::map<std::shared_ptr<KeyFrame>, int> getObservations() const;
-    void addObservation(std::shared_ptr<KeyFrame> keyframe, int id);
+    void addObservation(std::shared_ptr<KeyFrame> keyframeO, int id);
 };
 
 };

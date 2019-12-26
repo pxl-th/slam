@@ -18,11 +18,7 @@ add_subdirectory(src/frame)
 add_subdirectory(src/map)
 add_subdirectory(src/tracking)
 
-target_compile_options(main
-    PRIVATE
-    -Wall
-    -wd5045 # Spectre related stuff
-)
+target_compile_options(main PRIVATE -W4)
 target_include_directories(main PRIVATE include)
 target_link_libraries(main
     PRIVATE

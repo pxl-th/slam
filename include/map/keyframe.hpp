@@ -19,7 +19,7 @@ class MapPoint;
  */
 class KeyFrame {
 private:
-    Frame frame;
+    std::shared_ptr<Frame> frame;
     cv::Mat pose, cameraCenter;
 
     /**
@@ -30,11 +30,11 @@ public:
     static unsigned long long globalID;
     unsigned long long id;
 public:
-    KeyFrame(const Frame& frame, const cv::Mat& pose);
+    KeyFrame(std::shared_ptr<Frame> frame, const cv::Mat& pose);
 
     cv::Mat getPose() const;
     cv::Mat getCameraCenter() const;
-    const Frame& getFrame() const;
+    std::shared_ptr<Frame> getFrame() const;
 
     /**
      * Given pose matrix, update KeyFrame's pose and camera's center.
@@ -43,7 +43,7 @@ public:
      * Should contain both rotation and translation,
      * and have `4x4` shape.
      */
-    void setPose(const cv::Mat& pose);
+    void setPose(const cv::Mat& newPose);
 
     void addMapPoint(std::shared_ptr<MapPoint> mapPoint);
 
