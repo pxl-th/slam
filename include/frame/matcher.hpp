@@ -24,12 +24,13 @@ public:
      * @param frame1 Frame which will be used to find matches with `frame2`.
      * @param frame2 Frame which will be used to find mathces with `frame1`
      * @param maximumDistance Maximum distance in terms of Hamming distance.
-     * @param areaSize
-     *  If you want to find matches for keypoints in an area
-     *  in terms of pixel distance between keypoints, then specify distance.
-     *  If you want to find matches between all keypoints,
-     *  no matter what pixel distace, specify `-1`.
+     * @param areaSize If you want to find matches for keypoints in an area
+     * in terms of pixel distance between keypoints, then specify distance.
+     * If you want to find matches between all keypoints,
+     * no matter what pixel distace, specify `-1`.
      * @return matches Output vector which will contain matches.
+     * Where `query` indices are for the `frame1`
+     * and `train` indices --- `frame2`.
      */
     std::vector<cv::DMatch> frameMatch(
         std::shared_ptr<Frame> frame1, std::shared_ptr<Frame> frame2,

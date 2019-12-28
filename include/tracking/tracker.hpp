@@ -12,15 +12,15 @@ namespace slam {
 class Tracker {
 public:
     enum States {
-        NO_IMAGES = -1,
-        UNINITIALIZED = 0,
-        INITIALIZED = 1
+        NO_IMAGES,
+        UNINITIALIZED,
+        INITIALIZED
     };
 private:
     States state;
     std::shared_ptr<cv::Mat> cameraMatrix, distortions;
 
-    std::shared_ptr<Frame> initialFrame, currentFrame;
+    std::shared_ptr<KeyFrame> initialKeyFrame, lastKeyFrame, currentKeyFrame;
 
     Initializer initializer;
     std::shared_ptr<Detector> detector;
@@ -39,7 +39,12 @@ public:
 private:
     bool initialize();
 
-    std::shared_ptr<Frame> packImage(
+    void trackFrame();
+
+    /**
+     * Create KeyFrame from `image` with identity pose matrix.
+     */
+    std::shared_ptr<KeyFrame> packImage(
         std::shared_ptr<cv::Mat> image, double timestamp
     );
 };

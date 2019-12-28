@@ -138,7 +138,7 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
 
     // Set mappoints vertices.
     int id = 1;
-    for (const auto& p : keyframe->getMapPoints()) {
+    for (const auto& [i, p] : keyframe->getMapPoints()) {
         int keypointId = p->getObservations()[keyframe];
 
         auto kernel = new g2o::RobustKernelHuber();
@@ -157,10 +157,10 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
         // Set edge.
         // Edge connects current mappoint vertex with keyframe vertex.
         auto edge = new g2o::EdgeSE3ProjectXYZ();
-        edge->setVertex(0, edgeVertex);
-        edge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+        edge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
             optimizer.vertex(id)
         ));
+        edge->setVertex(1, edgeVertex);
         edge->setMeasurement(observation);
         edge->setInformation(
             Eigen::Matrix2d::Identity()
@@ -178,6 +178,8 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
         id++;
     }
 
+    std::cout << "Optimizing" << std::endl;
+    optimizer.setVerbose(true);
     optimizer.initializeOptimization();
     optimizer.optimize(iterations);
 

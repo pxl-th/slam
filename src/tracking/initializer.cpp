@@ -106,8 +106,8 @@ std::shared_ptr<Map> Initializer::initializeMap(
         mappoint->addObservation(referenceKeyFrame, matches[i].queryIdx);
         mappoint->addObservation(currentKeyFrame, matches[i].trainIdx);
 
-        referenceKeyFrame->addMapPoint(mappoint);
-        currentKeyFrame->addMapPoint(mappoint);
+        referenceKeyFrame->addMapPoint(matches[i].queryIdx, mappoint);
+        currentKeyFrame->addMapPoint(matches[i].trainIdx, mappoint);
 
         map->addMappoint(mappoint);
     }
@@ -124,7 +124,7 @@ std::shared_ptr<Map> Initializer::initializeMap(
     );
     currentKeyFrame->setPose(currentPose);
     // Scale mappoints by inverse median depth.
-    for (auto p : referenceKeyFrame->getMapPoints())
+    for (auto& [id, p] : referenceKeyFrame->getMapPoints())
         p->setWorldPos(p->getWorldPos() * inverseMedianDepth);
 
     return map;

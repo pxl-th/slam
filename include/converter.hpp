@@ -12,7 +12,7 @@ inline cv::Mat matFromVector(const std::vector<cv::Point2f>& p) {
     int size = static_cast<int>(p.size());
     cv::Mat m(size, 2, CV_32F);
     for (int i = 0; i < size; i++) {
-        const auto& t = p[static_cast<size_t>(i)];
+        const auto& t = p[i];
         m.at<float>(i, 0) = t.x;
         m.at<float>(i, 1) = t.y;
     }
@@ -23,12 +23,24 @@ inline cv::Mat matFromVector(const std::vector<cv::Point3f>& p) {
     int size = static_cast<int>(p.size());
     cv::Mat m(size, 3, CV_32F);
     for (int i = 0; i < size; i++) {
-        const auto& t = p[static_cast<size_t>(i)];
+        const auto& t = p[i];
         m.at<float>(i, 0) = t.x;
         m.at<float>(i, 1) = t.y;
         m.at<float>(i, 2) = t.z;
     }
     return m;
+}
+
+inline cv::Mat toHomogeneous(const cv::Mat& m) {
+    cv::Mat r = cv::Mat::ones(m.rows, m.cols + 1, CV_32F);
+    m.copyTo(r.rowRange(0, m.rows).colRange(0, m.cols));
+    return r;
+}
+
+inline cv::Mat fromHomogeneous(const cv::Mat& m) {
+    cv::Mat r(m.rows, m.cols - 1, CV_32F);
+    m.rowRange(0, m.rows).colRange(0, m.cols - 1).copyTo(r);
+    return r;
 }
 
 inline std::vector<cv::Point3f> vectorFromMat(const cv::Mat& m) {

@@ -15,6 +15,10 @@ class MapPoint {
 private:
     cv::Point3f position;
     std::shared_ptr<KeyFrame> keyframe;
+    /**
+     * Keyframe from which mappoint is visible
+     * and id of the keypoint of the mappoint.
+     */
     std::map<std::shared_ptr<KeyFrame>, int> observations;
 public:
     MapPoint(const cv::Point3f& position, std::shared_ptr<KeyFrame> keyframe);
