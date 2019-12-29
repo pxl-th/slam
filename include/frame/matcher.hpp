@@ -8,13 +8,13 @@
 #pragma warning(pop)
 
 #include"frame.hpp"
+#include"map/keyframe.hpp"
 
 namespace slam {
 
 class Matcher{
 private:
     cv::Ptr<cv::BFMatcher> matcher;
-
 public:
     Matcher() : matcher(cv::BFMatcher::create(cv::BFMatcher::BRUTEFORCE_HAMMING, true)) {}
     Matcher(cv::Ptr<cv::BFMatcher> matcher);
@@ -37,6 +37,36 @@ public:
         float maximumDistance, float areaSize = -1
     );
 
+    /**
+     * Find matches between KeyFrames.
+     *
+     * First, mappoints from `fromKeyFrame` (fKF) are projected onto
+     * `toKeyFrame` (tKF) image plane. \n
+     * Then we find matches between descriptors in keyframes
+     * and filter out those mathces whose respective mappoints lie outside
+     * of the regions defined by projected mappoints and `areaSize`.
+     *
+     * @param fromKeyFrame Frame which will be used to find matches with `frame2`.
+     * @param toKeyFrame Frame which will be used to find mathces with `frame1`
+     * @param maximumDistance Maximum distance in terms of Hamming distance.
+     * @param areaSize If you want to find matches for keypoints in an area
+     * in terms of pixel distance between keypoints, then specify distance.
+     * If you want to find matches between all keypoints,
+     * no matter what pixel distace, specify `-1`.
+     * @return matches Output vector which will contain matches.
+     * Where `query` indices are for the `fromKeyFrame`
+     * and `train` indices --- `toKeyFrame`.
+     */
+    std::vector<cv::DMatch> projectionMatch(
+        std::shared_ptr<KeyFrame> fromKeyFrame,
+        std::shared_ptr<KeyFrame> toKeyFrame,
+        float maximumDistance, float areaSize = -1
+    );
+private:
+    std::vector<cv::Point2f> _projectMapPoints(
+        std::shared_ptr<KeyFrame> fromKeyFrame,
+        std::shared_ptr<KeyFrame> toKeyFrame
+    );
 };
 
 };

@@ -7,8 +7,9 @@
 
 namespace slam {
 
-Tracker::Tracker(Calibration calibration, std::shared_ptr<Detector> detector)
-    : detector(detector) {
+Tracker::Tracker(
+    Calibration calibration, std::shared_ptr<Detector> detector, bool useMotion
+) : detector(detector), useMotion(useMotion) {
     cameraMatrix = std::make_shared<cv::Mat>(calibration.cameraMatrix);
     distortions = std::make_shared<cv::Mat>(calibration.distortions);
     state = NO_IMAGES;
@@ -16,7 +17,7 @@ Tracker::Tracker(Calibration calibration, std::shared_ptr<Detector> detector)
 
 void Tracker::track(std::shared_ptr<cv::Mat> image) {
     // TODO: correct timestamp
-    currentKeyFrame = packImage(image, 0);
+    currentKeyFrame = _packImage(image, 0);
 
     switch (state) {
     case NO_IMAGES:
@@ -24,16 +25,20 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
         state = UNINITIALIZED;
         break;
     case UNINITIALIZED:
-        if (initialize()) state = INITIALIZED;
+        if (_initialize()) state = INITIALIZED;
         lastKeyFrame = map->getKeyframes()[1];
         break;
     case INITIALIZED:
-        trackFrame();
+        _trackFrame();
+
+        // track motion frame
+        // relocalisation
+        // local mapper does triangulation!!!
         break;
     }
 }
 
-bool Tracker::initialize() {
+bool Tracker::_initialize() {
     auto initialFrame = initialKeyFrame->getFrame();
     auto currentFrame = currentKeyFrame->getFrame();
 
@@ -53,14 +58,7 @@ bool Tracker::initialize() {
     return true;
 }
 
-/**
- * 1. Find matches between LF and CF.
- * For matched LF keypoints, assign their respective mappoints
- * as CF mappoints.
- * 2. Perform pose optimization on CF.
- * 3...
- */
-void Tracker::trackFrame() {
+void Tracker::_trackFrame() {
     auto matches = matcher.frameMatch(
         lastKeyFrame->getFrame(), currentKeyFrame->getFrame(), 300, 50
     );
@@ -83,13 +81,48 @@ void Tracker::trackFrame() {
     currentKeyFrame->setPose(lastKeyFrame->getPose());
     optimizer::poseOptimization(currentKeyFrame);
 
-    // Search by projection
-    // Pose optimization
+    auto projectionMatches = matcher.projectionMatch(
+        lastKeyFrame, currentKeyFrame, 200, 20
+    );
+    std::cout
+        << "Tracking projection frame matches "
+        << projectionMatches.size() << std::endl;
+    for (const auto& match : projectionMatches) {
+        auto exist = lastMappoints.find(match.queryIdx);
+        if (exist == lastMappoints.end()) continue;
+
+        auto mappoint = exist->second;
+        mappoint->addObservation(currentKeyFrame, match.trainIdx);
+        currentKeyFrame->addMapPoint(match.trainIdx, mappoint);
+    }
+    std::cout
+        << "Total tracked points "
+        << currentKeyFrame->getMapPoints().size() << std::endl;
 }
 
-std::shared_ptr<KeyFrame> Tracker::packImage(
-    std::shared_ptr<cv::Mat> image, double timestamp
-) {
+void Tracker::_trackMotionFrame() {
+
+}
+
+void Tracker::_updateMotion(bool successfulTracking) {
+    if (!successfulTracking) {
+        velocity = cv::Mat();
+        return;
+    }
+
+    cv::Mat lastMotion = cv::Mat::eye(4, 4, CV_32F);
+    auto lastPose = lastKeyFrame->getPose();
+    cv::Mat lastRotation = lastPose.rowRange(0, 3).colRange(0, 3).t();
+    cv::Mat lastTranslation = -lastRotation * lastPose.rowRange(0, 3).col(3);
+
+    lastRotation.copyTo(lastMotion.rowRange(0, 3).colRange(0, 3));
+    lastTranslation.copyTo(lastMotion.rowRange(0, 3).col(3));
+
+    velocity = currentKeyFrame->getPose() * lastMotion;
+}
+
+std::shared_ptr<KeyFrame>
+Tracker::_packImage(std::shared_ptr<cv::Mat> image, double timestamp) {
     auto frame = std::make_shared<Frame>(
         image, timestamp, detector, cameraMatrix, distortions
     );
