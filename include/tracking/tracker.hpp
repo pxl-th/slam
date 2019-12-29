@@ -80,7 +80,22 @@ private:
     void _updateMotion(bool successfulTracking);
 
     /**
+     * Add mappoints to `keyframe` with `trainIdx` if there
+     * is mappoint in `lastMappoints` under `queryIdx` key
+     * from `matches`.
+     */
+    void _addMatches(
+        std::shared_ptr<KeyFrame> keyframe,
+        const std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
+        const std::vector<cv::DMatch>& matches
+    );
+
+    /**
      * Create KeyFrame from `image` with identity pose matrix.
+     *
+     * @param image Image to pack into KeyFrame.
+     * @param timestamp Timestamp of when this image was taken.
+     * @return New KeyFrame with identity pose matrix and no mappoints.
      */
     std::shared_ptr<KeyFrame> _packImage(
         std::shared_ptr<cv::Mat> image, double timestamp
