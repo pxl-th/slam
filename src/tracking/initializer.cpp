@@ -11,27 +11,27 @@
 
 namespace slam {
 
-Initializer::Initializer(Frame& reference) : reference(reference) {}
+Initializer::Initializer(std::shared_ptr<Frame> reference) : reference(reference) {}
 
 std::tuple<cv::Mat, cv::Mat, cv::Mat, std::vector<cv::Point3f>>
-Initializer::initialize(Frame& current, std::vector<cv::DMatch>& matches) {
+Initializer::initialize(std::shared_ptr<Frame> current, std::vector<cv::DMatch>& matches) {
     std::vector<cv::Point2f> referencePoints, currentPoints;
     referencePoints.resize(matches.size());
     currentPoints.resize(matches.size());
     // Copy points from keypoints.
     for (size_t i = 0; i < matches.size(); i++) {
-        referencePoints[i] = reference.undistortedKeypoints[matches[i].queryIdx].pt;
-        currentPoints[i] = current.undistortedKeypoints[matches[i].trainIdx].pt;
+        referencePoints[i] = reference->undistortedKeypoints[matches[i].queryIdx].pt;
+        currentPoints[i] = current->undistortedKeypoints[matches[i].trainIdx].pt;
     }
 
     cv::Mat mask, essential = cv::findEssentialMat(
-        referencePoints, currentPoints, reference.cameraMatrix,
+        referencePoints, currentPoints, *reference->cameraMatrix,
         cv::RANSAC, 0.999, 1.0, mask
     );
     cv::Mat rotation, translation, inliersMask;
     cv::recoverPose(
         essential, referencePoints, currentPoints,
-        reference.cameraMatrix, rotation, translation, inliersMask
+        *reference->cameraMatrix, rotation, translation, inliersMask
     );
     // Complete outliers mask and remove outlier points.
     {
@@ -52,10 +52,10 @@ Initializer::initialize(Frame& current, std::vector<cv::DMatch>& matches) {
     cv::Mat secondProjection(3, 4, CV_32F, cv::Scalar(0));
 
     // Calculate projection matrices.
-    reference.cameraMatrix.copyTo(firstProjection.rowRange(0, 3).colRange(0, 3));
+    reference->cameraMatrix->copyTo(firstProjection.rowRange(0, 3).colRange(0, 3));
     rotation.copyTo(secondProjection.rowRange(0, 3).colRange(0, 3));
     translation.copyTo(secondProjection.rowRange(0, 3).col(3));
-    secondProjection = reference.cameraMatrix * secondProjection;
+    secondProjection = *reference->cameraMatrix * secondProjection;
 
     // Reconstruct points.
     cv::Mat reconstructedPointsM, homogeneousPoints;
@@ -69,30 +69,28 @@ Initializer::initialize(Frame& current, std::vector<cv::DMatch>& matches) {
 
     float error = _reprojectionError(
         currentPoints, reconstructedPoints, rotation, translation,
-        reference.cameraMatrix, reference.distortions
+        *reference->cameraMatrix, *reference->distortions
     );
     std::cout << "Reprojection error " << error << std::endl;
     return {rotation, translation, mask, reconstructedPoints};
 }
 
 std::shared_ptr<Map> Initializer::initializeMap(
-    const Frame& current, const cv::Mat& rotation, const cv::Mat& translation,
+    const std::shared_ptr<Frame> current, const cv::Mat& rotation, const cv::Mat& translation,
     const std::vector<cv::Point3f>& reconstructedPoints,
     const std::vector<cv::DMatch>& matches, const cv::Mat& outliersMask
 ) {
-    auto map = std::shared_ptr<Map>(new Map());
+    auto map = std::make_shared<Map>();
 
     // Construct transformation matrix out of rotation and translation.
     cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
     rotation.copyTo(pose.rowRange(0, 3).colRange(0, 3));
     translation.copyTo(pose.rowRange(0, 3).col(3));
 
-    auto referenceKeyFrame = std::shared_ptr<KeyFrame>(new KeyFrame(
+    auto referenceKeyFrame = std::make_shared<KeyFrame>(
         reference, cv::Mat::eye(4, 4, CV_32F)
-    ));
-    auto currentKeyFrame = std::shared_ptr<KeyFrame>(new KeyFrame(
-        current, pose
-    ));
+    );
+    auto currentKeyFrame = std::make_shared<KeyFrame>(current, pose);
 
     // reference -- query, current -- train
     map->addKeyframe(referenceKeyFrame);
@@ -100,16 +98,16 @@ std::shared_ptr<Map> Initializer::initializeMap(
 
     // Add observations to mappoints and add mappoints to map.
     for (size_t i = 0, j = 0; i < matches.size(); i++) {
-        if (outliersMask.at<uchar>(i) == 0) continue;
+        if (outliersMask.at<uchar>(static_cast<int>(i)) == 0) continue;
 
-        auto mappoint = std::shared_ptr<MapPoint>(new MapPoint(
+        auto mappoint = std::make_shared<MapPoint>(
             reconstructedPoints[j++], currentKeyFrame
-        ));
+        );
         mappoint->addObservation(referenceKeyFrame, matches[i].queryIdx);
         mappoint->addObservation(currentKeyFrame, matches[i].trainIdx);
 
-        referenceKeyFrame->addMapPoint(mappoint);
-        currentKeyFrame->addMapPoint(mappoint);
+        referenceKeyFrame->addMapPoint(matches[i].queryIdx, mappoint);
+        currentKeyFrame->addMapPoint(matches[i].trainIdx, mappoint);
 
         map->addMappoint(mappoint);
     }
@@ -126,7 +124,7 @@ std::shared_ptr<Map> Initializer::initializeMap(
     );
     currentKeyFrame->setPose(currentPose);
     // Scale mappoints by inverse median depth.
-    for (auto p : referenceKeyFrame->getMapPoints())
+    for (auto& [id, p] : referenceKeyFrame->getMapPoints())
         p->setWorldPos(p->getWorldPos() * inverseMedianDepth);
 
     return map;

@@ -64,7 +64,7 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
         // With edge's observation being a keyframe's keypoint.
         auto observations = mappoint->getObservations();
         for (const auto& [keyframe, keypointId] : observations) {
-            auto keypoint = keyframe->getFrame().undistortedKeypoints[keypointId];
+            auto keypoint = keyframe->getFrame()->undistortedKeypoints[keypointId];
             auto edge = new g2o::EdgeSE3ProjectXYZ();
             auto kernel = new g2o::RobustKernelHuber();
 
@@ -80,14 +80,14 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
             edge->setMeasurement(observation);
             edge->setInformation(
                 Eigen::Matrix2d::Identity()
-                * keyframe->getFrame().invSigma[keypoint.octave]
+                * keyframe->getFrame()->invSigma[keypoint.octave]
             );
             edge->setRobustKernel(kernel);
 
-            edge->fx = keyframe->getFrame().cameraMatrix.at<float>(0, 0);
-            edge->fy = keyframe->getFrame().cameraMatrix.at<float>(1, 1);
-            edge->cx = keyframe->getFrame().cameraMatrix.at<float>(0, 2);
-            edge->cy = keyframe->getFrame().cameraMatrix.at<float>(1, 2);
+            edge->fx = keyframe->getFrame()->cameraMatrix->at<float>(0, 0);
+            edge->fy = keyframe->getFrame()->cameraMatrix->at<float>(1, 1);
+            edge->cx = keyframe->getFrame()->cameraMatrix->at<float>(0, 2);
+            edge->cy = keyframe->getFrame()->cameraMatrix->at<float>(1, 2);
 
             optimizer.addEdge(edge);
         }
@@ -104,7 +104,7 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
     // Update map with optimized hypergraph.
     for (auto& keyframe : keyframes) {
         auto vertex = dynamic_cast<g2o::VertexSE3Expmap*>(
-            optimizer.vertex(keyframe->id)
+            optimizer.vertex(static_cast<int>(keyframe->id))
         );
         keyframe->setPose(se3QuatToMat(vertex->estimate()));
     }
@@ -138,12 +138,12 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
 
     // Set mappoints vertices.
     int id = 1;
-    for (const auto& p : keyframe->getMapPoints()) {
+    for (const auto& [i, p] : keyframe->getMapPoints()) {
         int keypointId = p->getObservations()[keyframe];
 
         auto kernel = new g2o::RobustKernelHuber();
         auto vertexMP = new g2o::VertexSBAPointXYZ();
-        auto keypoint = keyframe->getFrame().undistortedKeypoints[keypointId];
+        auto keypoint = keyframe->getFrame()->undistortedKeypoints[keypointId];
 
         vertexMP->setEstimate(pointToVec3d(p->getWorldPos()));
         vertexMP->setFixed(true);
@@ -157,27 +157,29 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
         // Set edge.
         // Edge connects current mappoint vertex with keyframe vertex.
         auto edge = new g2o::EdgeSE3ProjectXYZ();
-        edge->setVertex(0, edgeVertex);
-        edge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+        edge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
             optimizer.vertex(id)
         ));
+        edge->setVertex(1, edgeVertex);
         edge->setMeasurement(observation);
         edge->setInformation(
             Eigen::Matrix2d::Identity()
-            * keyframe->getFrame().invSigma[keypoint.octave]
+            * keyframe->getFrame()->invSigma[keypoint.octave]
         );
         edge->setRobustKernel(kernel);
         edge->setLevel(0);
 
-        edge->fx = keyframe->getFrame().cameraMatrix.at<float>(0, 0);
-        edge->fy = keyframe->getFrame().cameraMatrix.at<float>(1, 1);
-        edge->cx = keyframe->getFrame().cameraMatrix.at<float>(0, 2);
-        edge->cy = keyframe->getFrame().cameraMatrix.at<float>(1, 2);
+        edge->fx = keyframe->getFrame()->cameraMatrix->at<float>(0, 0);
+        edge->fy = keyframe->getFrame()->cameraMatrix->at<float>(1, 1);
+        edge->cx = keyframe->getFrame()->cameraMatrix->at<float>(0, 2);
+        edge->cy = keyframe->getFrame()->cameraMatrix->at<float>(1, 2);
 
         optimizer.addEdge(edge);
         id++;
     }
 
+    std::cout << "Optimizing" << std::endl;
+    optimizer.setVerbose(true);
     optimizer.initializeOptimization();
     optimizer.optimize(iterations);
 

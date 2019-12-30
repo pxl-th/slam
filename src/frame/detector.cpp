@@ -1,10 +1,12 @@
+#include<iostream>
 #include"frame/detector.hpp"
 
 slam::Detector::Detector(cv::Ptr<cv::ORB> detector) : detector(detector) {}
 
 void slam::Detector::detect(
-    cv::InputArray& image,
-    std::vector<cv::KeyPoint>& keypoints, cv::OutputArray& descriptors
+    std::shared_ptr<cv::Mat> image,
+    std::vector<cv::KeyPoint>& keypoints,
+    std::shared_ptr<cv::Mat> descriptors
 ) {
-    detector->detectAndCompute(image, cv::noArray(), keypoints, descriptors);
+    detector->detectAndCompute(*image, cv::noArray(), keypoints, *descriptors);
 }

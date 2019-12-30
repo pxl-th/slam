@@ -2,6 +2,7 @@
 #define KEYFRAME_H
 
 #pragma warning(push, 0)
+#include<map>
 #include<vector>
 
 #include<opencv2/core.hpp>
@@ -19,23 +20,22 @@ class MapPoint;
  */
 class KeyFrame {
 private:
-    Frame frame;
+    std::shared_ptr<Frame> frame;
     cv::Mat pose, cameraCenter;
-
     /**
-     * Set of MapPoints that are visible from this KeyFrame.
+     * Map with `{keypoint id : mappoint}` elements,
+     * where `keypoint id` is for the current frame's keypoint.
      */
-    std::vector<std::shared_ptr<MapPoint>> mapPoints;
+    std::map<int, std::shared_ptr<MapPoint>> mappoints;
 public:
     static unsigned long long globalID;
     unsigned long long id;
 public:
-    KeyFrame(const Frame& frame, const cv::Mat& pose);
+    KeyFrame(std::shared_ptr<Frame> frame, const cv::Mat& pose);
 
     cv::Mat getPose() const;
     cv::Mat getCameraCenter() const;
-    const Frame& getFrame() const;
-
+    std::shared_ptr<Frame> getFrame() const;
     /**
      * Given pose matrix, update KeyFrame's pose and camera's center.
      *
@@ -43,12 +43,11 @@ public:
      * Should contain both rotation and translation,
      * and have `4x4` shape.
      */
-    void setPose(const cv::Mat& pose);
+    void setPose(const cv::Mat& newPose);
 
-    void addMapPoint(std::shared_ptr<MapPoint> mapPoint);
+    void addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint);
 
-    std::vector<std::shared_ptr<MapPoint>> getMapPoints() const;
-
+    std::map<int, std::shared_ptr<MapPoint>> getMapPoints() const;
     /**
      * Calculate median depth of the mappoints, visible in this keyframe,\n
      * by calculating depth for all visible mappoints and getting their median.\n

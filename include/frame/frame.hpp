@@ -17,11 +17,8 @@ namespace slam {
  */
 class Frame {
 public:
-    Detector& detector;
-
-    cv::Mat image, descriptors;
-    cv::Mat cameraMatrix, distortions;
-
+    std::shared_ptr<Detector> detector;
+    std::shared_ptr<cv::Mat> image, cameraMatrix, distortions, descriptors;
     std::vector<cv::KeyPoint> keypoints, undistortedKeypoints;
     /**
      * Array of scales, size equals to the number of levels
@@ -47,6 +44,7 @@ public:
 
     double timestamp;
 public:
+    Frame() {}
     /**
      * Create frame from given image.
      *
@@ -57,8 +55,10 @@ public:
      * @param distortions Distortions coefficients calculated using Calibration.
      */
     Frame(
-        cv::Mat& image, const double& timestamp, Detector& detector,
-        cv::Mat& cameraMatrix, cv::Mat& distortions
+        std::shared_ptr<cv::Mat> image,
+        const double timestamp, std::shared_ptr<Detector> detector,
+        std::shared_ptr<cv::Mat> cameraMatrix,
+        std::shared_ptr<cv::Mat> distortions
     );
 private:
     void _undistortKeyPoints();

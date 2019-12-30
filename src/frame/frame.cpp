@@ -12,24 +12,26 @@
 namespace slam {
 
 Frame::Frame(
-    cv::Mat& image, const double& timestamp, Detector& detector,
-    cv::Mat& cameraMatrix, cv::Mat& distortions
+    std::shared_ptr<cv::Mat> image, const double timestamp,
+    std::shared_ptr<Detector> detector,
+    std::shared_ptr<cv::Mat> cameraMatrix, std::shared_ptr<cv::Mat> distortions
 ) : image(image), timestamp(timestamp), detector(detector),
-    cameraMatrix(cameraMatrix.clone()), distortions(distortions.clone()) {
+    cameraMatrix(cameraMatrix), distortions(distortions) {
+    descriptors = std::make_shared<cv::Mat>();
 
     // Detect and extract keypoints and their descriptors.
-    detector.detect(image, keypoints, descriptors);
+    detector->detect(image, keypoints, descriptors);
     if (keypoints.empty()) return;
     _undistortKeyPoints();
 
     // Calculate scales for each level in detector's pyramid.
     // This will be used in Bundle Adjustment as edge's information.
-    const double scale = detector.getScaleFactor();
+    const float scale = static_cast<float>(detector->getScaleFactor());
     sigma.push_back(1.0f);
     invSigma.push_back(1.0f);
     scales.push_back(1.0f);
 
-    for (int i = 1; i < detector.getLevels(); i++) {
+    for (int i = 1; i < detector->getLevels(); i++) {
         scales.push_back(scales[i - 1] * scale);
         sigma.push_back(scales[i] * scales[i]);
         invSigma.push_back(1.0f / sigma[i]);
@@ -38,7 +40,7 @@ Frame::Frame(
 
 void Frame::_undistortKeyPoints() {
     // If no distortion, then nothing to undistort.
-    if (distortions.at<float>(0) == 0.0f) {
+    if (distortions->at<float>(0) == 0.0f) {
         undistortedKeypoints = keypoints;
         return;
     }
@@ -52,8 +54,8 @@ void Frame::_undistortKeyPoints() {
 
     undistorted.reshape(2);
     cv::undistortPoints(
-        undistorted, undistorted, cameraMatrix,
-        distortions, cv::Mat(), cameraMatrix
+        undistorted, undistorted, *cameraMatrix.get(),
+        *distortions.get(), cv::Mat(), *cameraMatrix.get()
     );
     undistorted.reshape(1);
 

@@ -117,7 +117,7 @@ void Calibration::_calibrate(
     distortions = cv::Mat::zeros(settings.useFisheye ? 4 : 8, 1, CV_32F);
 
     if (settings.flag & cv::CALIB_FIX_ASPECT_RATIO)
-        cameraMatrix.at<float>(0, 0) = settings.aspectRatio;
+        cameraMatrix.at<float>(0, 0) = static_cast<float>(settings.aspectRatio);
 
     float gridWidth = settings.squareSize * (settings.boardSize.width - 1);
     auto corners = _calculateBorderCornerPosition(settings);

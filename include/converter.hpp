@@ -31,6 +31,18 @@ inline cv::Mat matFromVector(const std::vector<cv::Point3f>& p) {
     return m;
 }
 
+inline cv::Mat toHomogeneous(const cv::Mat& m) {
+    cv::Mat r = cv::Mat::ones(m.rows, m.cols + 1, CV_32F);
+    m.copyTo(r.rowRange(0, m.rows).colRange(0, m.cols));
+    return r;
+}
+
+inline cv::Mat fromHomogeneous(const cv::Mat& m) {
+    cv::Mat r(m.rows, m.cols - 1, CV_32F);
+    m.rowRange(0, m.rows).colRange(0, m.cols - 1).copyTo(r);
+    return r;
+}
+
 inline std::vector<cv::Point3f> vectorFromMat(const cv::Mat& m) {
     std::vector<cv::Point3f> p;
     for (int i = 0; i < m.rows; i++)
@@ -64,7 +76,7 @@ inline cv::Mat se3QuatToMat(const g2o::SE3Quat& q) {
     cv::Mat m(4, 4, CV_32F);
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            m.at<float>(i, j) = h(i, j);
+            m.at<float>(i, j) = static_cast<float>(h(i, j));
     return m.clone();
 }
 
@@ -76,7 +88,9 @@ inline Eigen::Matrix<double, 3, 1> pointToVec3d(const cv::Point3f& p) {
 
 inline cv::Point3f vec3dToPoint3f(const Eigen::Matrix<double, 3, 1>& m) {
     cv::Point3f p;
-    p.x = m[0]; p.y = m[1]; p.z = m[2];
+    p.x = static_cast<float>(m[0]);
+    p.y = static_cast<float>(m[1]);
+    p.z = static_cast<float>(m[2]);
     return p;
 }
 

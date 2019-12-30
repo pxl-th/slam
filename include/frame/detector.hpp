@@ -15,11 +15,9 @@ namespace slam {
 class Detector{
 private:
     cv::Ptr<cv::ORB> detector;
-
 public:
+    Detector(){}
     Detector(cv::Ptr<cv::ORB> detector);
-    ~Detector() = default;
-
     /**
      * Detect keypoints and calculate their descriptors for given image.
      *
@@ -29,8 +27,9 @@ public:
      * Which may slightly deviate in case of FAST score.
      */
     void detect(
-        cv::InputArray& image,
-        std::vector<cv::KeyPoint>& keypoints, cv::OutputArray& descriptors
+        std::shared_ptr<cv::Mat> image,
+        std::vector<cv::KeyPoint>& keypoints,
+        std::shared_ptr<cv::Mat> descriptors
     );
 
     inline int getLevels() { return detector->getNLevels(); }
