@@ -46,12 +46,45 @@ public:
      */
     void track(std::shared_ptr<cv::Mat> image);
 private:
+    /**
+     * Attempt to initialize tracking and map.
+     * Successful initialization creates initial map from
+     * `initialFrame` and `currentFrame`.
+     *
+     * @return `True` if initializetion was successful
+     * (found enought matches for initial reconstruction).
+     * `False` --- otherwise.
+     */
     bool _initialize();
 
-    // TODO: comms
-    void _trackFrame();
+    /**
+     * Track features from `last` KeyFrame onto `current` KeyFrame.
+     * Tracking is done as follows:
+     * - Find matches between `last` and `current` KeyFrame
+     * - Optimize `current` KeyFrame pose using matches
+     * - Find more matches, using optimized `current` KeyFrame pose,
+     *   using Matcher.projectionMatch
+     * - Optimize `current` KeyFrame pose again
+     *
+     * @return `True` if tracking was successful (found enought matches).
+     * `False` --- otherwise.
+     */
+    bool _trackFrame();
 
-    void _trackMotionFrame();
+    /**
+     * Track features from `last` KeyFrame onto `current` KeyFrame
+     * using motion model.
+     * Motion tracking is done as follows:
+     * - Calculate `current` KeyFrame pose using `last` KeyFrame pose and
+     *   motion model
+     * - Find matches between `last` and `current` KeyFrames using
+     *   Matcher.projectionMatch
+     * - Optimize `current` KeyFrame pose using matches
+     *
+     * @return `True` if tracking was successful (found enought matches).
+     * `False` --- otherwise.
+     */
+    bool _trackMotionFrame();
 
     /**
      * If tracking was successful, then update motion model,
