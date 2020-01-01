@@ -68,13 +68,17 @@ bool Tracker::_initialize() {
 }
 
 bool Tracker::_trackFrame() {
-    const auto lastMappoints = lastKeyFrame->getMapPoints();
+    std::cout << "Tracking..." << std::endl;
+    const auto& lastMappoints = lastKeyFrame->getMapPoints();
+    std::cout << "Mappoints number " << lastMappoints.size() << std::endl;
 
     // Add matched mappoints to current keyframe.
     auto matches = matcher.frameMatch(
         lastKeyFrame->getFrame(), currentKeyFrame->getFrame(), 300, 50
     );
+    std::cout << "Frame matches " << matches.size() << std::endl;
     _addMatches(currentKeyFrame, lastMappoints, matches);
+    std::cout << "Current matches " << currentKeyFrame->getMapPoints().size() << std::endl;
     currentKeyFrame->setPose(lastKeyFrame->getPose());
     optimizer::poseOptimization(currentKeyFrame);
 
@@ -91,6 +95,7 @@ bool Tracker::_trackFrame() {
 }
 
 bool Tracker::_trackMotionFrame() {
+    std::cout << "Motion tracking..." << std::endl;
     currentKeyFrame->setPose(velocity * lastKeyFrame->getPose());
 
     auto projectionMatches = matcher.projectionMatch(
@@ -114,7 +119,7 @@ void Tracker::_addMatches(
         auto exist = lastMappoints.find(match.queryIdx);
         if (exist == lastMappoints.end()) continue;
 
-        auto mappoint = exist->second;
+        auto& mappoint = exist->second;
         mappoint->addObservation(currentKeyFrame, match.trainIdx);
         currentKeyFrame->addMapPoint(match.trainIdx, mappoint);
     }

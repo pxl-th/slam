@@ -55,16 +55,17 @@ std::vector<cv::DMatch> Matcher::projectionMatch(
 
     const bool checkArea = areaSize != -1;
     bool inArea; cv::Point2f diff, kp;
+    const auto& fromFrame = fromKeyFrame->getFrame();
     const auto& toFrame = toKeyFrame->getFrame();
     for (const auto& m : rawMatches) {
-        if (toFrame->undistortedKeypoints[m.queryIdx].octave > 4) continue;
+        if (fromFrame->undistortedKeypoints[m.queryIdx].octave > 4) continue;
         if (m.distance > maximumDistance) continue;
         // Check if matched `toKeyFrame` keypoint is in any of the
         // areas of `areaSize` around projected `fromKeyFrame` mappoints
         // to `toKeyFrame` image plane. Select only those matches.
         if (checkArea) {
             inArea = false;
-            kp = toKeyFrame->getFrame()->undistortedKeypoints[m.trainIdx].pt;
+            kp = toFrame->undistortedKeypoints[m.trainIdx].pt;
             for (const auto& pp : projectedKeyPoints) {
                 if (inArea) break;
                 diff = kp - pp;

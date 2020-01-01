@@ -96,7 +96,7 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
     std::cout << "[optimization] Initialized hypergraph" << std::endl;
 
     std::cout << "[optimization] Starting optimization..." << std::endl;
-    optimizer.setVerbose(true);
+    optimizer.setVerbose(false);
     optimizer.initializeOptimization();
     optimizer.optimize(iterations);
     std::cout << "[optimization] Optimization finished" << std::endl;
@@ -178,16 +178,18 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
         id++;
     }
 
-    std::cout << "Optimizing" << std::endl;
-    optimizer.setVerbose(true);
+    std::cout << "[pose optimization] Optimizing" << std::endl;
+    optimizer.setVerbose(false);
     optimizer.initializeOptimization();
     optimizer.optimize(iterations);
+    std::cout << "[pose optimization] Finished" << std::endl;
 
     // Recover optimized pose.
     auto keyframeVertex = dynamic_cast<g2o::VertexSE3Expmap*>(
         optimizer.vertex(0)
     );
     keyframe->setPose(se3QuatToMat(keyframeVertex->estimate()));
+    std::cout << "[pose optimization] Updated pose" << std::endl;
 }
 
 };

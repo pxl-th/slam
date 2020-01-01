@@ -5,6 +5,7 @@
 #include<opencv2/calib3d.hpp>
 #include<opencv2/highgui.hpp>
 #include<opencv2/imgcodecs.hpp>
+#include<opencv2/imgproc/imgproc.hpp>
 #include<opencv2/viz.hpp>
 #pragma warning(pop)
 
@@ -46,34 +47,14 @@ cameraFromKeyFrame(std::shared_ptr<slam::KeyFrame> keyframe) {
     };
 }
 
-int main() {
-    auto calibration = getCalibration();
-    auto initImage = std::make_shared<cv::Mat>(cv::imread(
-        "C:\\Users\\tonys\\Downloads\\1.jpg", cv::IMREAD_GRAYSCALE
-    ));
-    auto currentImage = std::make_shared<cv::Mat>(cv::imread(
-        "C:\\Users\\tonys\\Downloads\\2.jpg", cv::IMREAD_GRAYSCALE
-    ));
-    auto nextImage = std::make_shared<cv::Mat>(cv::imread(
-        "C:\\Users\\tonys\\Downloads\\3.jpg", cv::IMREAD_GRAYSCALE
-    ));
-    auto detector = std::shared_ptr<slam::Detector>(new slam::Detector(
-        cv::ORB::create(1000, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE)
-    ));
-
-    slam::Tracker tracker(calibration, detector);
-    tracker.track(initImage);
-    tracker.track(currentImage);
-    tracker.track(nextImage);
-
-    auto targetKeyFrame = tracker.map->getKeyframes()[1];
+void drawMap(std::shared_ptr<slam::Map> map) {
+    auto targetKeyFrame = map->getKeyframes()[1];
     auto [cameraWidget, cameraPosition] = cameraFromKeyFrame(targetKeyFrame);
 
     /* Visualization */
     std::vector<cv::Point3f> adjustedPoints;
-    for (const auto& p : tracker.map->getMappoints())
+    for (const auto& p : map->getMappoints())
         adjustedPoints.push_back(p->getWorldPos());
-    std::cout << "example" << std::endl;
 
     cv::Mat keyframePose = targetKeyFrame->getPose();
     auto pointsHomo = slam::toHomogeneous(slam::matFromVector(adjustedPoints));
@@ -90,7 +71,43 @@ int main() {
         window.showWidget("cloud", cloud);
         window.spinOnce(1, true);
     }
+}
 
+int main() {
+    auto calibration = getCalibration();
+    auto detector = std::shared_ptr<slam::Detector>(new slam::Detector(
+        cv::ORB::create(1000, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE)
+    ));
+    slam::Tracker tracker(calibration, detector);
+
+    cv::VideoCapture capture("C:\\Users\\tonys\\Downloads\\cupp.mp4");
+    if (!capture.isOpened()) {
+        std::cerr << "Cannot open file" << std::endl;
+        return -1;
+    }
+    int i = 0;
+    while (true) {
+        cv::Mat frame;
+        capture >> frame;
+        if (frame.empty()) break;
+
+        if (i++ % 17 != 0) continue;
+        std::cout << "Frame " << i << std::endl;
+        i = 1;
+
+        cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
+        float scale = 1080.0f / static_cast<float>(frame.size().width);
+        cv::resize(frame, frame, cv::Size(0, 0), scale, scale);
+
+        imshow("henlo", frame);
+        if (cv::waitKey(1) == 'q') break;
+
+        auto currentImage = std::make_shared<cv::Mat>(frame.clone());
+        tracker.track(currentImage);
+    }
+
+    capture.release();
+    cv::destroyAllWindows();
     /**
      * Tracker only tracks keypoints in new frames and adjusts keyframe positions,
      * requesting from time to time to insert new keyframe into the map.
