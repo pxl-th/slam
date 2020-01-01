@@ -22,7 +22,7 @@ public:
      * @param matches Matches between `reference` and `current` frames.
      *
      * @return rotatiton, translation, inliers mask (0 value is outlier),
-     * reconstructed feature points
+     * reconstructed feature points.
      */
     std::tuple<cv::Mat, cv::Mat, cv::Mat, std::vector<cv::Point3f>>
     initialize(std::shared_ptr<Frame> current, std::vector<cv::DMatch>& matches);
