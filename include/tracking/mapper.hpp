@@ -18,8 +18,6 @@ namespace slam {
  */
 class Mapper {
 private:
-    bool acceptKeyframes;
-
     std::shared_ptr<KeyFrame> currentKeyFrame;
     std::queue<std::shared_ptr<KeyFrame>> keyframeQueue;
 
@@ -27,12 +25,8 @@ private:
 public:
     std::shared_ptr<Map> map;
 public:
-    Mapper(std::shared_ptr<Map> map);
-
-    /**
-     * @return `True` if Mapper accepts new KeyFrame, `False` --- otherwise.
-     */
-    bool accepts() const;
+    Mapper();
+    Mapper(Matcher matcher);
 
     void addKeyframe(std::shared_ptr<KeyFrame> keyframe);
     /**
@@ -46,7 +40,7 @@ public:
         std::vector<cv::DMatch> matches, bool recoverPose
     );
 private:
-    void _processKeyFrame(std::shared_ptr<KeyFrame> keyframe);
+    void _processKeyFrame();
     /**
      * Create connections between keyframes that
      * share `mappoints` with `keyframe`.

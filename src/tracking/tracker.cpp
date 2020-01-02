@@ -41,8 +41,18 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
         bool successfulTracking = false;
         if (motionTracking) successfulTracking = _trackMotionFrame();
         if (!successfulTracking) successfulTracking = _trackFrame();
+        std::cout
+            << "[tracking] Successful tracking "
+            << successfulTracking << std::endl;
         if (useMotion) _updateMotion(successfulTracking);
 
+        std::cout
+            << "[tracking] Before addition "
+            << currentKeyFrame->getMapPoints().size() << std::endl;
+        mapper.addKeyframe(currentKeyFrame);
+        std::cout
+            << "[tracking] After addition "
+            << currentKeyFrame->getMapPoints().size() << std::endl;
         lastKeyFrame = currentKeyFrame;
         break;
     }
@@ -64,6 +74,7 @@ bool Tracker::_initialize() {
     map = initializer.initializeMap(
         currentKeyFrame, pose, reconstructedPoints, matches, mask
     );
+    mapper.map = map;
     return true;
 }
 

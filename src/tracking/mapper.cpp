@@ -5,33 +5,56 @@
 
 #include"converter.hpp"
 #include"tracking/mapper.hpp"
+#include"tracking/optimizer.hpp"
 
 namespace slam {
 
-Mapper::Mapper(std::shared_ptr<Map> map) : map(map), acceptKeyframes(true) {}
+Mapper::Mapper() {}
 
-bool Mapper::accepts() const { return acceptKeyframes; }
+Mapper::Mapper(Matcher matcher) : matcher(matcher) {}
 
 void Mapper::addKeyframe(std::shared_ptr<KeyFrame> keyframe) {
     keyframeQueue.push(keyframe);
+    _processKeyFrame();
 }
 
-void Mapper::_processKeyFrame(std::shared_ptr<KeyFrame> keyframe) {
-    acceptKeyframes = false;
-
+void Mapper::_processKeyFrame() {
     currentKeyFrame = keyframeQueue.front();
     keyframeQueue.pop();
 
     _createConnections(currentKeyFrame);
 
-    map->addKeyframe(keyframe);
+    for (const auto& [keyframe, connections] : currentKeyFrame->connections) {
+        auto matches = matcher.frameMatch(
+            keyframe->getFrame(), currentKeyFrame->getFrame(), 300, 50
+        );
+        auto points = std::get<1>(triangulatePoints(
+            keyframe, currentKeyFrame, matches, false
+        ));
 
+        for (size_t i = 0; i < matches.size(); i++) {
+            auto mappoint = std::make_shared<MapPoint>(
+                points[i], currentKeyFrame
+            );
+            mappoint->addObservation(keyframe, matches[i].queryIdx);
+            mappoint->addObservation(currentKeyFrame, matches[i].trainIdx);
+
+            keyframe->addMapPoint(matches[i].queryIdx, mappoint);
+            currentKeyFrame->addMapPoint(matches[i].trainIdx, mappoint);
+
+            map->addMappoint(mappoint);
+        }
+    }
+    map->addKeyframe(currentKeyFrame);
+    std::cout
+        << "[mapping] Mapped mappoints "
+        << currentKeyFrame->getMapPoints().size() << std::endl;
     /**
      * + create connections between keyframes before adding to the map
      * + add kf to map
      * + triangulate points
-     * - replace triangulation in initializer
-     * - for every keyframe connection, triangulate
+     * + replace triangulation in initializer
+     * + for every keyframe connection triangulate
      * - fuse duplicates
      */
 }

@@ -9,6 +9,7 @@
 #include"frame/matcher.hpp"
 #include"initializer.hpp"
 #include"map/map.hpp"
+#include"tracking/mapper.hpp"
 
 namespace slam {
 
@@ -30,6 +31,7 @@ private:
     Initializer initializer;
     std::shared_ptr<Detector> detector;
     Matcher matcher;
+    Mapper mapper;
 
     cv::Mat velocity;
     bool useMotion;

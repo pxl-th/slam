@@ -85,6 +85,7 @@ int main() {
         std::cerr << "Cannot open file" << std::endl;
         return -1;
     }
+    int n = 0;
     int i = 0;
     while (true) {
         cv::Mat frame;
@@ -106,7 +107,8 @@ int main() {
         auto currentImage = std::make_shared<cv::Mat>(frame.clone());
         tracker.track(currentImage);
 
-        if (tracker.state == slam::Tracker::INITIALIZED) break;
+        if (n++ == 6) break;
+        /* if (tracker.state == slam::Tracker::INITIALIZED) break; */
     }
 
     capture.release();
