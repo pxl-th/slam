@@ -67,11 +67,14 @@ void Mapper::_createConnections(
     }
 }
 
-std::tuple<std::vector<cv::Point3f>, cv::Mat, cv::Mat>
-Mapper::triangulatePoints(
-    std::shared_ptr<Frame> frame1, std::shared_ptr<Frame> frame2,
-    std::vector<cv::DMatch> matches
+std::variant<
+    std::tuple<std::vector<cv::Point3f>, cv::Mat, cv::Mat>,
+    std::vector<cv::Point3f>
+> Mapper::triangulatePoints(
+    std::shared_ptr<KeyFrame> keyframe1, std::shared_ptr<KeyFrame> keyframe2,
+    std::vector<cv::DMatch> matches, bool recoverPose
 ) {
+    auto frame1 = keyframe1->getFrame(), frame2 = keyframe2->getFrame();
     cv::Mat cameraMatrix = *frame1->cameraMatrix;
     // Copy points from keypoints.
     std::vector<cv::Point2f> frame1Points, frame2Points;
@@ -81,7 +84,38 @@ Mapper::triangulatePoints(
         frame1Points[i] = frame1->undistortedKeypoints[matches[i].queryIdx].pt;
         frame2Points[i] = frame2->undistortedKeypoints[matches[i].trainIdx].pt;
     }
-    // Calculate essential matrix and recover pose from it.
+    // Construct projection matrices.
+    cv::Mat pose, mask;
+    cv::Mat firstProjection(3, 4, CV_32F), secondProjection(3, 4, CV_32F);
+    if (recoverPose) {
+        std::tie(pose, mask) = _recoverPose(frame1Points, frame2Points, cameraMatrix);
+        cameraMatrix.copyTo(firstProjection.rowRange(0, 3).colRange(0, 3));
+        pose.rowRange(0, 3).colRange(0, 4).copyTo(secondProjection);
+        secondProjection = cameraMatrix * secondProjection;
+    } else {
+        keyframe1->getPose().rowRange(0, 3).colRange(0, 4).copyTo(firstProjection);
+        keyframe2->getPose().rowRange(0, 3).colRange(0, 4).copyTo(secondProjection);
+        firstProjection = cameraMatrix * firstProjection;
+        secondProjection = cameraMatrix * secondProjection;
+    }
+    // Reconstruct points.
+    cv::Mat reconstructedPointsM, homogeneousPoints;
+    cv::triangulatePoints(
+        firstProjection, secondProjection,
+        frame1Points, frame2Points, homogeneousPoints
+    );
+    cv::convertPointsFromHomogeneous(homogeneousPoints.t(), reconstructedPointsM);
+    auto reconstructedPoints = vectorFromMat(reconstructedPointsM);
+
+    if (recoverPose) return std::tuple{reconstructedPoints, pose, mask};
+    return reconstructedPoints;
+}
+
+std::tuple<cv::Mat, cv::Mat> Mapper::_recoverPose(
+    std::vector<cv::Point2f>& frame1Points,
+    std::vector<cv::Point2f>& frame2Points,
+    const cv::Mat& cameraMatrix
+) {
     cv::Mat mask, essential = cv::findEssentialMat(
         frame1Points, frame2Points, cameraMatrix,
         cv::RANSAC, 0.999, 1.0, mask
@@ -92,7 +126,6 @@ Mapper::triangulatePoints(
         cameraMatrix, rotation, translation, inliersMask
     );
     // Complete outliers `mask` and remove outlier points.
-    {
     std::vector<cv::Point2f> rp, cp;
     for (int i = 0; i < inliersMask.rows; i++) {
         uchar im = inliersMask.at<uchar>(i), m = mask.at<uchar>(i);
@@ -104,30 +137,12 @@ Mapper::triangulatePoints(
         cp.push_back(frame2Points[i]);
     }
     frame1Points = rp; frame2Points = cp;
-    }
-    // Calculate projection matrices.
-    // TODO: use already estimated poses?
-    cv::Mat firstProjection(3, 4, CV_32F, cv::Scalar(0));
-    cameraMatrix.copyTo(firstProjection.rowRange(0, 3).colRange(0, 3));
-
-    cv::Mat secondProjection(3, 4, CV_32F, cv::Scalar(0));
-    rotation.copyTo(secondProjection.rowRange(0, 3).colRange(0, 3));
-    translation.copyTo(secondProjection.rowRange(0, 3).col(3));
-    secondProjection = cameraMatrix * secondProjection;
-    // Reconstruct points.
-    cv::Mat reconstructedPointsM, homogeneousPoints;
-    cv::triangulatePoints(
-        firstProjection, secondProjection,
-        frame1Points, frame2Points, homogeneousPoints
-    );
-    cv::convertPointsFromHomogeneous(homogeneousPoints.t(), reconstructedPointsM);
-    auto reconstructedPoints = vectorFromMat(reconstructedPointsM);
     // Compose rotation and translation into pose matrix.
     cv::Mat pose = cv::Mat::eye(4, 4, CV_32F);
     rotation.copyTo(pose.rowRange(0, 3).colRange(0, 3));
     translation.copyTo(pose.rowRange(0, 3).col(3));
 
-    return {reconstructedPoints, pose, mask};
+    return {pose, mask};
 }
 
 };

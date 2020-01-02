@@ -1,3 +1,6 @@
+#ifndef TRACKER_H
+#define TRACKER_H
+
 #pragma warning(push, 0)
 #include<opencv2/core.hpp>
 #pragma warning(pop)
@@ -20,7 +23,6 @@ public:
         INITIALIZED
     };
 private:
-    States state;
     std::shared_ptr<cv::Mat> cameraMatrix, distortions;
 
     std::shared_ptr<KeyFrame> initialKeyFrame, lastKeyFrame, currentKeyFrame;
@@ -32,6 +34,8 @@ private:
     cv::Mat velocity;
     bool useMotion;
 public:
+    States state;
+
     std::shared_ptr<Map> map;
 public:
     Tracker(
@@ -136,3 +140,5 @@ private:
 };
 
 };
+
+#endif

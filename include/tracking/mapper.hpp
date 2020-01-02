@@ -1,5 +1,9 @@
+#ifndef MAPPER_H
+#define MAPPER_H
+
 #pragma warning(push, 0)
 #include<queue>
+#include<variant>
 #pragma warning(pop)
 
 #include"frame/matcher.hpp"
@@ -32,17 +36,14 @@ public:
 
     void addKeyframe(std::shared_ptr<KeyFrame> keyframe);
     /**
-     * Triangulate keypoints between `keyframe1` and `keyframe2`.
-     * *Note* that KeyFrame's have to potentially share keypoints,
-     * otherwise triangulation will be incorrect.
-     *
-     * @return List of triangulated keypoints, pose matrix for `frame2`
-     * and outliers mask (`0` --- is outlier).
+     * TODO
      */
-    static std::tuple<std::vector<cv::Point3f>, cv::Mat, cv::Mat>
-    triangulatePoints(
-        std::shared_ptr<Frame> frame1, std::shared_ptr<Frame> frame2,
-        std::vector<cv::DMatch> matches
+    static std::variant<
+        std::tuple<std::vector<cv::Point3f>, cv::Mat, cv::Mat>,
+        std::vector<cv::Point3f>
+    > triangulatePoints(
+        std::shared_ptr<KeyFrame> keyframe1, std::shared_ptr<KeyFrame> keyframe2,
+        std::vector<cv::DMatch> matches, bool recoverPose
     );
 private:
     void _processKeyFrame(std::shared_ptr<KeyFrame> keyframe);
@@ -57,6 +58,14 @@ private:
     void _createConnections(
         std::shared_ptr<KeyFrame> keyframe, int threshold = 15
     );
+
+    static std::tuple<cv::Mat, cv::Mat> _recoverPose(
+        std::vector<cv::Point2f>& frame1Points,
+        std::vector<cv::Point2f>& frame2Points,
+        const cv::Mat& cameraMatrix
+    );
 };
 
 };
+
+#endif

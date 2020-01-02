@@ -1,3 +1,6 @@
+#ifndef INITIALIZER_H
+#define INITIALIZER_H
+
 #pragma warning(push, 0)
 #include<tuple>
 #pragma warning(pop)
@@ -9,10 +12,10 @@ namespace slam {
 
 class Initializer {
 public:
-    std::shared_ptr<Frame> reference;
+    std::shared_ptr<KeyFrame> reference;
 public:
     Initializer(){}
-    Initializer(std::shared_ptr<Frame> reference);
+    Initializer(std::shared_ptr<KeyFrame> reference);
     /**
      * Given `current` frame and matches between
      * `reference` and `current` frames, find initial reconstruction.
@@ -24,22 +27,17 @@ public:
      * @return rotatiton, translation, inliers mask (0 value is outlier),
      * reconstructed feature points.
      */
-    std::tuple<cv::Mat, cv::Mat, cv::Mat, std::vector<cv::Point3f>>
-    initialize(std::shared_ptr<Frame> current, std::vector<cv::DMatch>& matches);
+    /* std::tuple<std::vector<cv::Point3f>, cv::Mat, cv::Mat> */
+    /* initialize(std::shared_ptr<KeyFrame> current, std::vector<cv::DMatch>& matches); */
 
     std::shared_ptr<Map> initializeMap(
-        const std::shared_ptr<Frame> current,
-        const cv::Mat& rotation, const cv::Mat& translation,
+        const std::shared_ptr<KeyFrame> current,
+        const cv::Mat& pose,
         const std::vector<cv::Point3f>& reconstructedPoints,
         const std::vector<cv::DMatch>& matches, const cv::Mat& outliersMask
     );
-private:
-    float _reprojectionError(
-        std::vector<cv::Point2f>& imagePoints,
-        std::vector<cv::Point3f>& objectPoints,
-        cv::Mat& rotation, cv::Mat& translation,
-        const cv::Mat& cameraMatrix, const cv::Mat& distortions
-    );
 };
 
 };
+
+#endif

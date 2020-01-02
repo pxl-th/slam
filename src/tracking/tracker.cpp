@@ -2,6 +2,7 @@
 #include<iostream>
 #pragma warning(pop)
 
+#include"tracking/mapper.hpp"
 #include"tracking/tracker.hpp"
 #include"tracking/optimizer.hpp"
 
@@ -51,18 +52,17 @@ bool Tracker::_initialize() {
     auto initialFrame = initialKeyFrame->getFrame();
     auto currentFrame = currentKeyFrame->getFrame();
 
-    initializer = Initializer(initialFrame);
+    initializer = Initializer(initialKeyFrame);
     auto matches = matcher.frameMatch(initialFrame, currentFrame, 300, 50);
     std::cout << "Frame matches " << matches.size() << std::endl;
     if (matches.size() < 100) return false;
 
-    auto [rotation, translation, mask, reconstructedPoints] = (
-        initializer.initialize(currentFrame, matches)
-    );
+    auto [reconstructedPoints, pose, mask] = std::get<0>(Mapper::triangulatePoints(
+        initialKeyFrame, currentKeyFrame, matches, true
+    ));
     std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
-
     map = initializer.initializeMap(
-        currentFrame, rotation, translation, reconstructedPoints, matches, mask
+        currentKeyFrame, pose, reconstructedPoints, matches, mask
     );
     return true;
 }

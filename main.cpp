@@ -56,11 +56,11 @@ void drawMap(std::shared_ptr<slam::Map> map) {
     for (const auto& p : map->getMappoints())
         adjustedPoints.push_back(p->getWorldPos());
 
-    cv::Mat keyframePose = targetKeyFrame->getPose();
-    auto pointsHomo = slam::toHomogeneous(slam::matFromVector(adjustedPoints));
-    adjustedPoints = slam::vectorFromMat(slam::fromHomogeneous(
-        pointsHomo * keyframePose.t()
-    ));
+    /* cv::Mat keyframePose = targetKeyFrame->getPose(); */
+    /* auto pointsHomo = slam::toHomogeneous(slam::matFromVector(adjustedPoints)); */
+    /* adjustedPoints = slam::vectorFromMat(slam::fromHomogeneous( */
+    /*     pointsHomo * keyframePose.t() */
+    /* )); */
 
     cv::viz::Viz3d window("slam");
     cv::viz::WCloud cloud(adjustedPoints, cv::viz::Color::red());
@@ -91,7 +91,8 @@ int main() {
         capture >> frame;
         if (frame.empty()) break;
 
-        if (i++ % 17 != 0) continue;
+        // TODO: calc parallax
+        if (i++ % 37 != 0) continue;
         std::cout << "Frame " << i << std::endl;
         i = 1;
 
@@ -104,10 +105,14 @@ int main() {
 
         auto currentImage = std::make_shared<cv::Mat>(frame.clone());
         tracker.track(currentImage);
+
+        if (tracker.state == slam::Tracker::INITIALIZED) break;
     }
 
     capture.release();
     cv::destroyAllWindows();
+
+    drawMap(tracker.map);
     /**
      * Tracker only tracks keypoints in new frames and adjusts keyframe positions,
      * requesting from time to time to insert new keyframe into the map.
