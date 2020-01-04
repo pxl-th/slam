@@ -48,15 +48,6 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
         std::cout
             << "[tracking] Successful tracking "
             << successfulTracking << std::endl;
-        /* if (currentKeyFrame->mappointsNumber() < 10) { */
-        /*     std::cout */
-        /*         << "[tracking] Before addition " */
-        /*         << currentKeyFrame->mappointsNumber() << std::endl; */
-        /*     mapper.addKeyframe(currentKeyFrame); */
-        /*     std::cout */
-        /*         << "[tracking] After addition " */
-        /*         << currentKeyFrame->mappointsNumber() << std::endl; */
-        /* } */
         mapper.addKeyframe(currentKeyFrame);
         // else -> remove references to currentKeyFrame from mappoints
         lastKeyFrame = currentKeyFrame;
@@ -69,11 +60,11 @@ bool Tracker::_initialize() {
     auto currentFrame = currentKeyFrame->getFrame();
 
     initializer = Initializer(initialKeyFrame);
-    auto matches = matcher.frameMatch(initialFrame, currentFrame, 300, 50);
+    auto matches = matcher.frameMatch(currentFrame, initialFrame, 300, 50);
     if (matches.size() < 100) return false;
 
     auto [reconstructedPoints, pose, mask] = std::get<0>(Mapper::triangulatePoints(
-        initialKeyFrame, currentKeyFrame, matches, true
+        currentKeyFrame, initialKeyFrame, matches, true
     ));
     map = initializer.initializeMap(
         currentKeyFrame, pose, reconstructedPoints, matches, mask
@@ -83,6 +74,7 @@ bool Tracker::_initialize() {
 }
 
 bool Tracker::_trackFrame() {
+    std::cout << "[tracking] Frame" << std::endl;
     const auto& lastMappoints = lastKeyFrame->getMapPoints();
 
     // Add matched mappoints to current keyframe.

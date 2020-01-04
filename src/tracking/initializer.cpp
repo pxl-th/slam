@@ -22,7 +22,7 @@ std::shared_ptr<Map> Initializer::initializeMap(
 ) {
     auto map = std::make_shared<Map>();
     current->setPose(pose);
-    // reference -- query, current -- train
+    // current -- query, reference -- train
     map->addKeyframe(reference);
     map->addKeyframe(current);
 
@@ -33,11 +33,12 @@ std::shared_ptr<Map> Initializer::initializeMap(
         auto mappoint = std::make_shared<MapPoint>(
             reconstructedPoints[j++], current
         );
-        mappoint->addObservation(reference, matches[i].queryIdx);
-        mappoint->addObservation(current, matches[i].trainIdx);
 
-        reference->addMapPoint(matches[i].queryIdx, mappoint);
-        current->addMapPoint(matches[i].trainIdx, mappoint);
+        mappoint->addObservation(current, matches[i].queryIdx);
+        mappoint->addObservation(reference, matches[i].trainIdx);
+
+        current->addMapPoint(matches[i].queryIdx, mappoint);
+        reference->addMapPoint(matches[i].trainIdx, mappoint);
 
         map->addMappoint(mappoint);
     }

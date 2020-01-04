@@ -53,8 +53,6 @@ void drawMap(std::shared_ptr<slam::Map> map) {
     std::vector<std::tuple<cv::viz::WCameraPosition, cv::Affine3d>> cameras;
     for (const auto& keyframe : map->getKeyframes())
         cameras.push_back(cameraFromKeyFrame(keyframe));
-    /* auto targetKeyFrame = map->getKeyframes()[1]; */
-    /* auto [cameraWidget, cameraPosition] = ; */
 
     /* Visualization */
     std::vector<cv::Point3f> adjustedPoints;
@@ -63,7 +61,7 @@ void drawMap(std::shared_ptr<slam::Map> map) {
 
     cv::viz::Viz3d window("slam");
     cv::viz::WCloud cloud(adjustedPoints, cv::viz::Color::red());
-    cv::viz::WCoordinateSystem coordinateSystem;
+    /* cv::viz::WCoordinateSystem coordinateSystem; */
     int cameraId = 0;
     while (!window.wasStopped()) {
         for (const auto& [cameraWidget, cameraPosition] : cameras) {
@@ -72,7 +70,7 @@ void drawMap(std::shared_ptr<slam::Map> map) {
                 cameraWidget, cameraPosition
             );
         }
-        window.showWidget("CS", coordinateSystem);
+        /* window.showWidget("CS", coordinateSystem); */
         window.showWidget("cloud", cloud);
         window.spinOnce(1, true);
     }
@@ -113,7 +111,7 @@ int main() {
         auto currentImage = std::make_shared<cv::Mat>(frame.clone());
         tracker.track(currentImage);
 
-        if (n++ == 9) break;
+        if (n++ == 8) break;
         /* if (tracker.state == slam::Tracker::INITIALIZED) break; */
     }
 
