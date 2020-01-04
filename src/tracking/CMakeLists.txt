@@ -6,4 +6,6 @@ target_sources(main
     ../../include/tracking/optimizer.hpp
     tracker.cpp
     ../../include/tracking/tracker.hpp
+    mapper.cpp
+    ../../include/tracking/mapper.hpp
 )

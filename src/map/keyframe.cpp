@@ -44,6 +44,10 @@ std::map<int, std::shared_ptr<MapPoint>> KeyFrame::getMapPoints() const {
     return mappoints;
 }
 
+size_t KeyFrame::mappointsNumber() const {
+    return mappoints.size();
+}
+
 float KeyFrame::medianDepth() const {
     std::vector<float> depths;
     const cv::Mat depthTransformation = pose.row(2).colRange(0, 3).t();

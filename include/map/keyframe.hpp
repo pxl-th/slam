@@ -28,6 +28,12 @@ private:
      */
     std::map<int, std::shared_ptr<MapPoint>> mappoints;
 public:
+    /**
+     * Map with `{keyframe : connections}` elements,
+     * where `connections` is the number of mappoints that
+     * are shared between `keyframe` and this KeyFrame.
+     */
+    std::map<std::shared_ptr<KeyFrame>, int> connections;
     static unsigned long long globalID;
     unsigned long long id;
 public:
@@ -48,6 +54,8 @@ public:
     void addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint);
 
     std::map<int, std::shared_ptr<MapPoint>> getMapPoints() const;
+
+    size_t mappointsNumber() const;
     /**
      * Calculate median depth of the mappoints, visible in this keyframe,\n
      * by calculating depth for all visible mappoints and getting their median.\n

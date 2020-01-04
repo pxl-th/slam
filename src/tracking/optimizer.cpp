@@ -32,7 +32,6 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
     );
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(algorithm);
-    std::cout << "[optimization] Creating hypergraph..." << std::endl;
 
     // Set KeyFrame vertices.
     int kId, mId = 0, mIdT;
@@ -93,13 +92,9 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
         }
         mId++;
     }
-    std::cout << "[optimization] Initialized hypergraph" << std::endl;
-
-    std::cout << "[optimization] Starting optimization..." << std::endl;
-    optimizer.setVerbose(true);
+    optimizer.setVerbose(false);
     optimizer.initializeOptimization();
     optimizer.optimize(iterations);
-    std::cout << "[optimization] Optimization finished" << std::endl;
 
     // Update map with optimized hypergraph.
     for (auto& keyframe : keyframes) {
@@ -178,8 +173,7 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
         id++;
     }
 
-    std::cout << "Optimizing" << std::endl;
-    optimizer.setVerbose(true);
+    optimizer.setVerbose(false);
     optimizer.initializeOptimization();
     optimizer.optimize(iterations);
 
