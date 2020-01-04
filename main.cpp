@@ -15,6 +15,8 @@
 #include"tracking/tracker.hpp"
 #include"converter.hpp"
 
+int WIDTH = 1080, HEIGHT = 720;
+
 slam::Calibration getCalibration(bool compute = false) {
     std::string outputFile(
         "C:\\Users\\tonys\\projects\\cpp\\slam\\data\\calibration.yaml"
@@ -28,7 +30,7 @@ slam::Calibration getCalibration(bool compute = false) {
     slam::CalibrationSettings settings = slam::load<slam::CalibrationSettings>(
         settingsFile, "CalibrationSettings"
     );
-    slam::Calibration calibration(settings, false, 1080);
+    slam::Calibration calibration(settings, false, WIDTH);
     slam::save(calibration, outputFile, "Calibration");
     return calibration;
 }
@@ -36,7 +38,7 @@ slam::Calibration getCalibration(bool compute = false) {
 std::tuple<cv::viz::WCameraPosition, cv::Affine3d>
 cameraFromKeyFrame(std::shared_ptr<slam::KeyFrame> keyframe) {
     cv::Matx44f projection = keyframe->getPose();
-    cv::viz::Camera camera(projection, cv::Size(1280, 960));
+    cv::viz::Camera camera(projection, cv::Size(WIDTH, HEIGHT));
     cv::Affine3d cameraPosition = cv::viz::makeCameraPose(
         keyframe->getCameraCenter(),
         cv::Vec3f(0.0f, 0.0f, 1.0f),
@@ -48,25 +50,28 @@ cameraFromKeyFrame(std::shared_ptr<slam::KeyFrame> keyframe) {
 }
 
 void drawMap(std::shared_ptr<slam::Map> map) {
-    auto targetKeyFrame = map->getKeyframes()[1];
-    auto [cameraWidget, cameraPosition] = cameraFromKeyFrame(targetKeyFrame);
+    std::vector<std::tuple<cv::viz::WCameraPosition, cv::Affine3d>> cameras;
+    for (const auto& keyframe : map->getKeyframes())
+        cameras.push_back(cameraFromKeyFrame(keyframe));
+    /* auto targetKeyFrame = map->getKeyframes()[1]; */
+    /* auto [cameraWidget, cameraPosition] = ; */
 
     /* Visualization */
     std::vector<cv::Point3f> adjustedPoints;
     for (const auto& p : map->getMappoints())
         adjustedPoints.push_back(p->getWorldPos());
 
-    /* cv::Mat keyframePose = targetKeyFrame->getPose(); */
-    /* auto pointsHomo = slam::toHomogeneous(slam::matFromVector(adjustedPoints)); */
-    /* adjustedPoints = slam::vectorFromMat(slam::fromHomogeneous( */
-    /*     pointsHomo * keyframePose.t() */
-    /* )); */
-
     cv::viz::Viz3d window("slam");
     cv::viz::WCloud cloud(adjustedPoints, cv::viz::Color::red());
     cv::viz::WCoordinateSystem coordinateSystem;
+    int cameraId = 0;
     while (!window.wasStopped()) {
-        window.showWidget("CW", cameraWidget, cameraPosition);
+        for (const auto& [cameraWidget, cameraPosition] : cameras) {
+            window.showWidget(
+                std::to_string(cameraId++) + "CW",
+                cameraWidget, cameraPosition
+            );
+        }
         window.showWidget("CS", coordinateSystem);
         window.showWidget("cloud", cloud);
         window.spinOnce(1, true);
@@ -74,7 +79,7 @@ void drawMap(std::shared_ptr<slam::Map> map) {
 }
 
 int main() {
-    auto calibration = getCalibration();
+    auto calibration = getCalibration(false);
     auto detector = std::shared_ptr<slam::Detector>(new slam::Detector(
         cv::ORB::create(1000, 1.2f, 8, 31, 0, 2, cv::ORB::FAST_SCORE)
     ));
@@ -92,13 +97,14 @@ int main() {
         capture >> frame;
         if (frame.empty()) break;
 
-        // TODO: calc parallax
-        if (i++ % 37 != 0) continue;
-        std::cout << "Frame " << i << std::endl;
+        if (i++ % 35 != 0) continue;
         i = 1;
 
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
-        float scale = 1080.0f / static_cast<float>(frame.size().width);
+        float scale = (
+            static_cast<float>(WIDTH)
+            / static_cast<float>(frame.size().width)
+        );
         cv::resize(frame, frame, cv::Size(0, 0), scale, scale);
 
         imshow("henlo", frame);
@@ -107,7 +113,7 @@ int main() {
         auto currentImage = std::make_shared<cv::Mat>(frame.clone());
         tracker.track(currentImage);
 
-        if (n++ == 6) break;
+        if (n++ == 9) break;
         /* if (tracker.state == slam::Tracker::INITIALIZED) break; */
     }
 

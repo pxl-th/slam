@@ -54,6 +54,8 @@ public:
     void addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint);
 
     std::map<int, std::shared_ptr<MapPoint>> getMapPoints() const;
+
+    size_t mappointsNumber() const;
     /**
      * Calculate median depth of the mappoints, visible in this keyframe,\n
      * by calculating depth for all visible mappoints and getting their median.\n

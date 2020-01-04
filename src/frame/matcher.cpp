@@ -12,7 +12,7 @@ Matcher::Matcher(cv::Ptr<cv::BFMatcher> matcher) : matcher(matcher) {}
 
 std::vector<cv::DMatch> Matcher::frameMatch(
     std::shared_ptr<Frame> frame1, std::shared_ptr<Frame> frame2,
-    float maximumDistance, float areaSize
+    float maximumDistance, float areaSize, int maxLevel
 ) {
     std::vector<cv::DMatch> matches, descriptorMatches;
     bool inArea, checkArea = areaSize != -1;
@@ -22,9 +22,10 @@ std::vector<cv::DMatch> Matcher::frameMatch(
         *frame1->descriptors, *frame2->descriptors, descriptorMatches
     );
     for (auto& m : descriptorMatches) {
-        if (frame1->undistortedKeypoints[m.queryIdx].octave > 4)
-            continue;
-
+        if (
+            maxLevel != -1
+            && frame1->undistortedKeypoints[m.queryIdx].octave > maxLevel
+        ) continue;
         if (checkArea) {
             d = (
                 frame1->undistortedKeypoints[m.queryIdx].pt
@@ -43,7 +44,7 @@ std::vector<cv::DMatch> Matcher::frameMatch(
 std::vector<cv::DMatch> Matcher::projectionMatch(
     std::shared_ptr<KeyFrame> fromKeyFrame,
     std::shared_ptr<KeyFrame> toKeyFrame,
-    float maximumDistance, float areaSize
+    float maximumDistance, float areaSize, int maxLevel
 ) {
     auto projectedKeyPoints = _projectMapPoints(fromKeyFrame, toKeyFrame);
     std::vector<cv::DMatch> rawMatches, matches;
@@ -55,10 +56,12 @@ std::vector<cv::DMatch> Matcher::projectionMatch(
 
     const bool checkArea = areaSize != -1;
     bool inArea; cv::Point2f diff, kp;
-    const auto& fromFrame = fromKeyFrame->getFrame();
     const auto& toFrame = toKeyFrame->getFrame();
     for (const auto& m : rawMatches) {
-        if (fromFrame->undistortedKeypoints[m.queryIdx].octave > 4) continue;
+        if (
+            maxLevel != -1
+            && toFrame->undistortedKeypoints[m.trainIdx].octave > maxLevel
+        ) continue;
         if (m.distance > maximumDistance) continue;
         // Check if matched `toKeyFrame` keypoint is in any of the
         // areas of `areaSize` around projected `fromKeyFrame` mappoints

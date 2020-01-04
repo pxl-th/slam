@@ -38,21 +38,27 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
             && (map->getKeyframes().size() >= 4)
         );
 
+        std::cout
+            << "[tracking] last keyframe "
+            << lastKeyFrame->getMapPoints().size() << std::endl;
         bool successfulTracking = false;
         if (motionTracking) successfulTracking = _trackMotionFrame();
         if (!successfulTracking) successfulTracking = _trackFrame();
+        if (useMotion) _updateMotion(successfulTracking);
         std::cout
             << "[tracking] Successful tracking "
             << successfulTracking << std::endl;
-        if (useMotion) _updateMotion(successfulTracking);
-
-        std::cout
-            << "[tracking] Before addition "
-            << currentKeyFrame->getMapPoints().size() << std::endl;
+        /* if (currentKeyFrame->mappointsNumber() < 10) { */
+        /*     std::cout */
+        /*         << "[tracking] Before addition " */
+        /*         << currentKeyFrame->mappointsNumber() << std::endl; */
+        /*     mapper.addKeyframe(currentKeyFrame); */
+        /*     std::cout */
+        /*         << "[tracking] After addition " */
+        /*         << currentKeyFrame->mappointsNumber() << std::endl; */
+        /* } */
         mapper.addKeyframe(currentKeyFrame);
-        std::cout
-            << "[tracking] After addition "
-            << currentKeyFrame->getMapPoints().size() << std::endl;
+        // else -> remove references to currentKeyFrame from mappoints
         lastKeyFrame = currentKeyFrame;
         break;
     }
@@ -64,13 +70,11 @@ bool Tracker::_initialize() {
 
     initializer = Initializer(initialKeyFrame);
     auto matches = matcher.frameMatch(initialFrame, currentFrame, 300, 50);
-    std::cout << "Frame matches " << matches.size() << std::endl;
     if (matches.size() < 100) return false;
 
     auto [reconstructedPoints, pose, mask] = std::get<0>(Mapper::triangulatePoints(
         initialKeyFrame, currentKeyFrame, matches, true
     ));
-    std::cout << "Reconstructed points " << reconstructedPoints.size() << std::endl;
     map = initializer.initializeMap(
         currentKeyFrame, pose, reconstructedPoints, matches, mask
     );
@@ -79,46 +83,51 @@ bool Tracker::_initialize() {
 }
 
 bool Tracker::_trackFrame() {
-    std::cout << "Tracking..." << std::endl;
     const auto& lastMappoints = lastKeyFrame->getMapPoints();
-    std::cout << "Mappoints number " << lastMappoints.size() << std::endl;
 
     // Add matched mappoints to current keyframe.
     auto matches = matcher.frameMatch(
         lastKeyFrame->getFrame(), currentKeyFrame->getFrame(), 300, 50
     );
-    std::cout << "Frame matches " << matches.size() << std::endl;
     _addMatches(currentKeyFrame, lastMappoints, matches);
-    std::cout << "Current matches " << currentKeyFrame->getMapPoints().size() << std::endl;
+    if (currentKeyFrame->mappointsNumber() < 10) {
+        matches = matcher.frameMatch(
+            lastKeyFrame->getFrame(), currentKeyFrame->getFrame(), 300, 50, -1
+        );
+        _addMatches(currentKeyFrame, lastMappoints, matches);
+    }
+
+    std::cout
+        << "[tracking] matches "
+        << currentKeyFrame->mappointsNumber() << std::endl;
     currentKeyFrame->setPose(lastKeyFrame->getPose());
     optimizer::poseOptimization(currentKeyFrame);
 
     auto projectionMatches = matcher.projectionMatch(
-        lastKeyFrame, currentKeyFrame, 200, 20
+        lastKeyFrame, currentKeyFrame, 250, 20
     );
     _addMatches(currentKeyFrame, lastMappoints, matches);
-    optimizer::poseOptimization(currentKeyFrame);
-
     std::cout
-        << "Total tracked points "
-        << currentKeyFrame->getMapPoints().size() << std::endl;
-    return currentKeyFrame->getMapPoints().size() >= 10;
+        << "[tracking] matches "
+        << currentKeyFrame->mappointsNumber() << std::endl;
+    optimizer::poseOptimization(currentKeyFrame);
+    return currentKeyFrame->mappointsNumber() >= 10;
 }
 
 bool Tracker::_trackMotionFrame() {
-    std::cout << "Motion tracking..." << std::endl;
     currentKeyFrame->setPose(velocity * lastKeyFrame->getPose());
 
     auto projectionMatches = matcher.projectionMatch(
-        lastKeyFrame, currentKeyFrame, 200, 20
+        lastKeyFrame, currentKeyFrame, 250, 40
     );
+    if (currentKeyFrame->mappointsNumber() < 10) {
+        projectionMatches = matcher.projectionMatch(
+            lastKeyFrame, currentKeyFrame, 300, 50, -1
+        );
+    }
     _addMatches(currentKeyFrame, lastKeyFrame->getMapPoints(), projectionMatches);
     optimizer::poseOptimization(currentKeyFrame);
-
-    std::cout
-        << "Total motion tracked points "
-        << currentKeyFrame->getMapPoints().size() << std::endl;
-    return currentKeyFrame->getMapPoints().size() >= 10;
+    return currentKeyFrame->mappointsNumber() >= 10;
 }
 
 void Tracker::_addMatches(

@@ -28,6 +28,8 @@ void Mapper::_processKeyFrame() {
         auto matches = matcher.frameMatch(
             keyframe->getFrame(), currentKeyFrame->getFrame(), 300, 50
         );
+        std::cout << "[mapping] Matches " << matches.size() << std::endl;
+        if (matches.size() < 10) continue;
         auto points = std::get<1>(triangulatePoints(
             keyframe, currentKeyFrame, matches, false
         ));
@@ -56,6 +58,8 @@ void Mapper::_processKeyFrame() {
      * + replace triangulation in initializer
      * + for every keyframe connection triangulate
      * - fuse duplicates
+     * - perform BA
+     * - remove outliers
      */
 }
 
