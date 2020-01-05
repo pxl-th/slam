@@ -44,12 +44,13 @@ cameraFromKeyFrame(std::shared_ptr<slam::KeyFrame> keyframe) {
         cv::Vec3f(0.0f, 0.0f, 1.0f),
         cv::Vec3f(0.0f, 1.0f, 1.0f)
     );
-    return {
-        cv::viz::WCameraPosition(camera.getFov()), cameraPosition
-    };
+    return {cv::viz::WCameraPosition(camera.getFov()), cameraPosition};
 }
 
 void drawMap(std::shared_ptr<slam::Map> map) {
+    std::cout
+        << "Map contains " << map->getMappoints().size()
+        << " points" << std::endl;
     std::vector<std::tuple<cv::viz::WCameraPosition, cv::Affine3d>> cameras;
     for (const auto& keyframe : map->getKeyframes())
         cameras.push_back(cameraFromKeyFrame(keyframe));
@@ -88,14 +89,13 @@ int main() {
         std::cerr << "Cannot open file" << std::endl;
         return -1;
     }
-    int n = 0;
-    int i = 0;
+    int n = 0, i = 0, s = 35;
     while (true) {
         cv::Mat frame;
         capture >> frame;
         if (frame.empty()) break;
 
-        if (i++ % 35 != 0) continue;
+        if (i++ % s != 0) continue;
         i = 1;
 
         cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
@@ -111,8 +111,8 @@ int main() {
         auto currentImage = std::make_shared<cv::Mat>(frame.clone());
         tracker.track(currentImage);
 
-        if (n++ == 8) break;
-        /* if (tracker.state == slam::Tracker::INITIALIZED) break; */
+        /* if (n++ == 8) break; */
+        if (tracker.state == slam::Tracker::INITIALIZED) s = 3;
     }
 
     capture.release();

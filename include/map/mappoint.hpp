@@ -59,6 +59,7 @@ public:
      * which corresponds to this MapPoint.
      */
     void addObservation(std::shared_ptr<KeyFrame> keyframeO, int id);
+    void removeObservation(std::shared_ptr<KeyFrame> keyframeO);
     /**
      * Calculate parallax for point.
      *

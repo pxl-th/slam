@@ -1,4 +1,5 @@
 #pragma warning(push, 0)
+#include<iostream>
 #include<opencv2/core/cvdef.h>
 #pragma warning(pop)
 
@@ -23,6 +24,12 @@ std::map<std::shared_ptr<KeyFrame>, int> MapPoint::getObservations() const {
 
 void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframeO, int id) {
     observations[keyframeO] = id;
+}
+
+void MapPoint::removeObservation(std::shared_ptr<KeyFrame> keyframeO) {
+    auto mp = observations.find(keyframeO);
+    if (mp != observations.end())
+        observations.erase(mp);
 }
 
 double MapPoint::parallax(cv::Mat point, cv::Mat camera1, cv::Mat camera2) {

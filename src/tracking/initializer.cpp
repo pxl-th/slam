@@ -46,7 +46,7 @@ std::shared_ptr<Map> Initializer::initializeMap(
     optimizer::globalBundleAdjustment(map, 20);
 
     float inverseMedianDepth = 1.0f / reference->medianDepth();
-    // TODO: assert that depth is positive
+    // TODO: assert that depth is positive, why?
 
     // Scale translation by inverse median depth.
     auto currentPose = current->getPose();

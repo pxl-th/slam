@@ -26,7 +26,10 @@ public:
 private:
     std::shared_ptr<cv::Mat> cameraMatrix, distortions;
 
-    std::shared_ptr<KeyFrame> initialKeyFrame, lastKeyFrame, currentKeyFrame;
+    std::shared_ptr<KeyFrame>
+        initialKeyFrame,
+        lastKeyFrame,
+        currentKeyFrame;
 
     Initializer initializer;
     std::shared_ptr<Detector> detector;
@@ -62,7 +65,6 @@ private:
      * `False` --- otherwise.
      */
     bool _initialize();
-
     /**
      * Track features from `last` KeyFrame onto `current` KeyFrame.
      * Tracking is done as follows:
@@ -76,7 +78,6 @@ private:
      * `False` --- otherwise.
      */
     bool _trackFrame();
-
     /**
      * Track features from `last` KeyFrame onto `current` KeyFrame
      * using motion model.
@@ -91,7 +92,6 @@ private:
      * `False` --- otherwise.
      */
     bool _trackMotionFrame();
-
     /**
      * If tracking was successful, then update motion model,
      * otherwise --- reset it.
@@ -117,7 +117,6 @@ private:
      * If not --- motion model is set to empty.
      */
     void _updateMotion(bool successfulTracking);
-
     /**
      * Add mappoints to `keyframe` with `trainIdx` if there
      * is mappoint in `lastMappoints` under `queryIdx` key
@@ -128,7 +127,7 @@ private:
         const std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
         const std::vector<cv::DMatch>& matches
     );
-
+    void _removeMatches(std::shared_ptr<KeyFrame> keyframe);
     /**
      * Create KeyFrame from `image` with identity pose matrix.
      *

@@ -28,17 +28,15 @@ cv::Mat KeyFrame::getCameraCenter() const { return cameraCenter.clone(); }
 
 std::shared_ptr<Frame> KeyFrame::getFrame() const { return frame; }
 
-/* void KeyFrame::addMapPoint(std::shared_ptr<MapPoint> mapPoint) { */
-/*     mapPoints.push_back(mapPoint); */
-/* } */
-
 void KeyFrame::addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint) {
     mappoints[keypointId] = mapPoint;
 }
 
-/* std::vector<std::shared_ptr<MapPoint>> KeyFrame::getMapPoints() const { */
-/*     return mapPoints; */
-/* } */
+void KeyFrame::removeMapPoint(int keypointId) {
+    auto mp = mappoints.find(keypointId);
+    if (mp != mappoints.end())
+        mappoints.erase(mp);
+}
 
 std::map<int, std::shared_ptr<MapPoint>> KeyFrame::getMapPoints() const {
     return mappoints;
