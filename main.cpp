@@ -119,12 +119,4 @@ int main() {
     cv::destroyAllWindows();
 
     drawMap(tracker.map);
-    /**
-     * Tracker only tracks keypoints in new frames and adjusts keyframe positions,
-     * requesting from time to time to insert new keyframe into the map.
-     * Which is handled by localmapper.
-     * LocalMapper manages new mappoints creating just like in map initialization
-     * (via essential matrix).
-     * so these two work together.
-     */
 }

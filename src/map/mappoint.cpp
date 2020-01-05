@@ -1,3 +1,7 @@
+#pragma warning(push, 0)
+#include<opencv2/core/cvdef.h>
+#pragma warning(pop)
+
 #include"map/mappoint.hpp"
 
 namespace slam {
@@ -19,6 +23,14 @@ std::map<std::shared_ptr<KeyFrame>, int> MapPoint::getObservations() const {
 
 void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframeO, int id) {
     observations[keyframeO] = id;
+}
+
+double MapPoint::parallax(cv::Mat point, cv::Mat camera1, cv::Mat camera2) {
+    cv::Mat normal1 = point - camera1, normal2 = point - camera2;
+
+    double p = normal1.dot(normal2) / (cv::norm(normal1) * cv::norm(normal2));
+    p  = std::acos(p) * 180.0 / CV_PI;
+    return p;
 }
 
 };
