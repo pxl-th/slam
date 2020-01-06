@@ -93,6 +93,19 @@ double parallax(
     cv::Point3f point, cv::Mat camera1, cv::Mat camera2, bool radians = true
 );
 
+bool isOutlier(
+    const cv::Point3f& point,
+    const std::shared_ptr<KeyFrame>& keyframe1,
+    const std::shared_ptr<KeyFrame>& keyframe2,
+    const cv::DMatch& match
+);
+
+double projectionError(
+    const std::shared_ptr<KeyFrame>& keyframe,
+    const cv::Point3f& point,
+    int keypointId
+);
+
 };
 
 #endif

@@ -23,12 +23,15 @@ void Mapper::_processKeyFrame() {
     keyframeQueue.pop();
 
     _createConnections(currentKeyFrame);
+    auto currentCenter = currentKeyFrame->getCameraCenter();
 
     for (const auto& [keyframe, connections] : currentKeyFrame->connections) {
+        auto keyframeCenter = keyframe->getCameraCenter();
         auto matches = matcher.frameMatch(
             keyframe->getFrame(), currentKeyFrame->getFrame(), 300, 50
         );
         std::cout << "[mapping] Matches " << matches.size() << std::endl;
+
         if (matches.size() < 10) continue;
         auto points = std::get<1>(triangulatePoints(
             keyframe, currentKeyFrame, matches, false
@@ -36,17 +39,8 @@ void Mapper::_processKeyFrame() {
 
         for (size_t i = 0; i < matches.size(); i++) {
             auto point = points[i];
-            auto pointParallax = parallax(
-                point,
-                keyframe->getCameraCenter(),
-                currentKeyFrame->getCameraCenter()
-            );
-            if (pointParallax < 0.0f || pointParallax > 0.999f)
+            if (isOutlier(point, keyframe, currentKeyFrame, matches[i]))
                 continue;
-
-            // TODO check reprojection error
-            // TODO check distances dist(c, p) > 0
-            // TODO check triangulation in front of camera
 
             auto mappoint = std::make_shared<MapPoint>(point, currentKeyFrame);
             mappoint->addObservation(keyframe, matches[i].queryIdx);
@@ -63,7 +57,7 @@ void Mapper::_processKeyFrame() {
 
     std::cout
         << "[mapping] Mapped mappoints "
-        << currentKeyFrame->getMapPoints().size() << std::endl;
+        << currentKeyFrame->mappointsNumber() << std::endl;
     /**
      * + create connections between keyframes before adding to the map
      * + add kf to map
@@ -126,7 +120,8 @@ std::variant<
     }
     // Construct projection matrices.
     cv::Mat pose, mask;
-    cv::Mat firstProjection(3, 4, CV_32F), secondProjection(3, 4, CV_32F);
+    cv::Mat firstProjection = cv::Mat::zeros(3, 4, CV_32F);
+    cv::Mat secondProjection = cv::Mat::zeros(3, 4, CV_32F);
     if (recoverPose) {
         std::tie(pose, mask) = _recoverPose(frame1Points, frame2Points, cameraMatrix);
         cameraMatrix.copyTo(firstProjection.rowRange(0, 3).colRange(0, 3));

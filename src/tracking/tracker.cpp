@@ -32,7 +32,6 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
         lastKeyFrame = map->getKeyframes()[1];
         break;
     case INITIALIZED:
-        // TODO: check for relocalisation before tracking
         const bool motionTracking = (
             useMotion
             && !velocity.empty()
@@ -67,12 +66,12 @@ bool Tracker::_initialize() {
     auto currentFrame = currentKeyFrame->getFrame();
 
     initializer = Initializer(initialKeyFrame);
-    auto matches = matcher.frameMatch(currentFrame, initialFrame, 300, 50);
+    auto matches = matcher.frameMatch(initialFrame, currentFrame, 300, 50);
     std::cout << "[initialization] Matches " << matches.size() << std::endl;
     if (matches.size() < 100) return false;
 
     auto [reconstructedPoints, pose, mask] = std::get<0>(Mapper::triangulatePoints(
-        currentKeyFrame, initialKeyFrame, matches, true
+        initialKeyFrame, currentKeyFrame, matches, true
     ));
     map = initializer.initializeMap(
         currentKeyFrame, pose, reconstructedPoints, matches, mask

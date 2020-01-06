@@ -21,8 +21,8 @@ std::shared_ptr<Map> Initializer::initializeMap(
     const std::vector<cv::DMatch>& matches, const cv::Mat& outliersMask
 ) {
     auto map = std::make_shared<Map>();
+    reference->setPose(cv::Mat::eye(4, 4, CV_32F)); // Wrong pose!!!! for reprojection
     current->setPose(pose);
-    // current -- query, reference -- train
     map->addKeyframe(reference);
     map->addKeyframe(current);
 
@@ -30,21 +30,15 @@ std::shared_ptr<Map> Initializer::initializeMap(
     for (size_t i = 0, j = 0; i < matches.size(); i++) {
         if (outliersMask.at<uchar>(static_cast<int>(i)) == 0) continue;
         auto point = reconstructedPoints[j++];
-        auto pointParallax = parallax(
-            point,
-            reference->getCameraCenter(),
-            current->getCameraCenter()
-        );
-        if (pointParallax < 0.0f || pointParallax > 0.999f)
+        if (isOutlier(point, reference, current, matches[i]))
             continue;
 
         auto mappoint = std::make_shared<MapPoint>(point, current);
+        mappoint->addObservation(reference, matches[i].queryIdx);
+        mappoint->addObservation(current, matches[i].trainIdx);
 
-        mappoint->addObservation(current, matches[i].queryIdx);
-        mappoint->addObservation(reference, matches[i].trainIdx);
-
-        current->addMapPoint(matches[i].queryIdx, mappoint);
-        reference->addMapPoint(matches[i].trainIdx, mappoint);
+        reference->addMapPoint(matches[i].queryIdx, mappoint);
+        current->addMapPoint(matches[i].trainIdx, mappoint);
 
         map->addMappoint(mappoint);
     }
