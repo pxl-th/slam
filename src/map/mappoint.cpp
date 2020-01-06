@@ -3,6 +3,7 @@
 #include<opencv2/core/cvdef.h>
 #pragma warning(pop)
 
+#include"converter.hpp"
 #include"map/mappoint.hpp"
 
 namespace slam {
@@ -32,12 +33,17 @@ void MapPoint::removeObservation(std::shared_ptr<KeyFrame> keyframeO) {
         observations.erase(mp);
 }
 
-double MapPoint::parallax(cv::Mat point, cv::Mat camera1, cv::Mat camera2) {
+double parallax(cv::Mat point, cv::Mat camera1, cv::Mat camera2, bool radians) {
     cv::Mat normal1 = point - camera1, normal2 = point - camera2;
 
     double p = normal1.dot(normal2) / (cv::norm(normal1) * cv::norm(normal2));
+    if (radians) return p;
     p  = std::acos(p) * 180.0 / CV_PI;
     return p;
 }
+
+double parallax(
+    cv::Point3f point, cv::Mat camera1, cv::Mat camera2, bool radians
+) { return parallax(matFromPoint3f(point).t(), camera1, camera2, radians); }
 
 };

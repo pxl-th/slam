@@ -8,6 +8,14 @@
 
 namespace slam {
 
+inline cv::Mat matFromPoint3f(const cv::Point3f& p) {
+    cv::Mat m(1, 3, CV_32F);
+    m.at<float>(0) = p.x;
+    m.at<float>(1) = p.y;
+    m.at<float>(2) = p.z;
+    return m;
+}
+
 inline cv::Mat matFromVector(const std::vector<cv::Point2f>& p) {
     int size = static_cast<int>(p.size());
     cv::Mat m(size, 2, CV_32F);

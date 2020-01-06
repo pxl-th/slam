@@ -35,9 +35,20 @@ void Mapper::_processKeyFrame() {
         ));
 
         for (size_t i = 0; i < matches.size(); i++) {
-            auto mappoint = std::make_shared<MapPoint>(
-                points[i], currentKeyFrame
+            auto point = points[i];
+            auto pointParallax = parallax(
+                point,
+                keyframe->getCameraCenter(),
+                currentKeyFrame->getCameraCenter()
             );
+            if (pointParallax < 0.0f || pointParallax > 0.999f)
+                continue;
+
+            // TODO check reprojection error
+            // TODO check distances dist(c, p) > 0
+            // TODO check triangulation in front of camera
+
+            auto mappoint = std::make_shared<MapPoint>(point, currentKeyFrame);
             mappoint->addObservation(keyframe, matches[i].queryIdx);
             mappoint->addObservation(currentKeyFrame, matches[i].trainIdx);
 
@@ -48,6 +59,8 @@ void Mapper::_processKeyFrame() {
         }
     }
     map->addKeyframe(currentKeyFrame);
+    /* optimizer::globalBundleAdjustment(map); */
+
     std::cout
         << "[mapping] Mapped mappoints "
         << currentKeyFrame->getMapPoints().size() << std::endl;

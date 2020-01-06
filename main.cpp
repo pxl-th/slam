@@ -111,8 +111,14 @@ int main() {
         auto currentImage = std::make_shared<cv::Mat>(frame.clone());
         tracker.track(currentImage);
 
-        /* if (n++ == 8) break; */
-        if (tracker.state == slam::Tracker::INITIALIZED) s = 3;
+        /* if (n++ == 2) break; */
+        if (tracker.state == slam::Tracker::INITIALIZED) {
+            s = 3;
+            /* if (tracker.map->getKeyframes().size() == 7) { */
+            /*     std::cout << "enough is enough" << std::endl; */
+            /*     break; */
+            /* } */
+        }
     }
 
     capture.release();

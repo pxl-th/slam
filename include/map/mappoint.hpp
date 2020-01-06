@@ -60,31 +60,38 @@ public:
      */
     void addObservation(std::shared_ptr<KeyFrame> keyframeO, int id);
     void removeObservation(std::shared_ptr<KeyFrame> keyframeO);
-    /**
-     * Calculate parallax for point.
-     *
-     * \f[
-     * \begin{align}
-     * & n_1 = p - c_1 \\
-     * & n_2 = p - c_2 \\
-     * & l = \frac
-     *  {n_1 \cdot n_2}
-     *  {\left\lVert n_1 \right\rVert \cdot \left\lVert n_2 \right\rVert} \\
-     * & g = acos\left( l \right) \cdot 180 \cdot \frac{1}{\pi}
-     * \end{align}
-     * \f]
-     *
-     * where \f$ p \f$ --- position of point in space,\n
-     * \f$ c_1, c_2 \f$ --- positions of cameras,\n
-     * \f$ l \f$ --- cosine parallax and \f$ g \f$ --- parallax in degrees.
-     *
-     * @param point Position of point for which to calculate parallax.
-     * @param camera1 Position of the first camera that observes the `point`.
-     * @param camera2 Position of the second camera that observes the `point`.
-     * @return Parallax value in degrees.
-     */
-    static double parallax(cv::Mat point, cv::Mat camera1, cv::Mat camera2);
 };
+
+/**
+ * Calculate parallax for point.
+ *
+ * \f[
+ * \begin{align}
+ * & n_1 = p - c_1 \\
+ * & n_2 = p - c_2 \\
+ * & l = \frac
+ *  {n_1 \cdot n_2}
+ *  {\left\lVert n_1 \right\rVert \cdot \left\lVert n_2 \right\rVert} \\
+ * & g = acos\left( l \right) \cdot 180 \cdot \frac{1}{\pi}
+ * \end{align}
+ * \f]
+ *
+ * where \f$ p \f$ --- position of point in space,\n
+ * \f$ c_1, c_2 \f$ --- positions of cameras,\n
+ * \f$ l \f$ --- cosine parallax and \f$ g \f$ --- parallax in degrees.
+ *
+ * @param point Position of point for which to calculate parallax.
+ * @param camera1 Position of the first camera that observes the `point`.
+ * @param camera2 Position of the second camera that observes the `point`.
+ * @return Parallax value in degrees.
+ */
+double parallax(
+    cv::Mat point, cv::Mat camera1, cv::Mat camera2, bool radians = true
+);
+
+double parallax(
+    cv::Point3f point, cv::Mat camera1, cv::Mat camera2, bool radians = true
+);
 
 };
 

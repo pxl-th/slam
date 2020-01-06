@@ -74,6 +74,7 @@ public:
      * @return Median depth.
      */
     float medianDepth() const;
+    float medianDepth(std::vector<std::shared_ptr<MapPoint>> points) const;
 };
 
 };

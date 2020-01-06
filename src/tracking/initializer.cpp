@@ -29,10 +29,16 @@ std::shared_ptr<Map> Initializer::initializeMap(
     // Add observations to mappoints and add mappoints to map.
     for (size_t i = 0, j = 0; i < matches.size(); i++) {
         if (outliersMask.at<uchar>(static_cast<int>(i)) == 0) continue;
-
-        auto mappoint = std::make_shared<MapPoint>(
-            reconstructedPoints[j++], current
+        auto point = reconstructedPoints[j++];
+        auto pointParallax = parallax(
+            point,
+            reference->getCameraCenter(),
+            current->getCameraCenter()
         );
+        if (pointParallax < 0.0f || pointParallax > 0.999f)
+            continue;
+
+        auto mappoint = std::make_shared<MapPoint>(point, current);
 
         mappoint->addObservation(current, matches[i].queryIdx);
         mappoint->addObservation(reference, matches[i].trainIdx);
@@ -43,9 +49,8 @@ std::shared_ptr<Map> Initializer::initializeMap(
         map->addMappoint(mappoint);
     }
 
-    optimizer::globalBundleAdjustment(map, 20);
-
     float inverseMedianDepth = 1.0f / reference->medianDepth();
+    std::cout << inverseMedianDepth << std::endl;
     // TODO: assert that depth is positive, why?
 
     // Scale translation by inverse median depth.
@@ -58,6 +63,7 @@ std::shared_ptr<Map> Initializer::initializeMap(
     for (auto& [id, p] : reference->getMapPoints())
         p->setWorldPos(p->getWorldPos() * inverseMedianDepth);
 
+    optimizer::globalBundleAdjustment(map, 20);
     return map;
 }
 

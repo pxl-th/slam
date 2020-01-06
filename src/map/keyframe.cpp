@@ -60,4 +60,18 @@ float KeyFrame::medianDepth() const {
     return depths[depths.size() / 2];
 }
 
+float KeyFrame::medianDepth(std::vector<std::shared_ptr<MapPoint>> points) const {
+    std::vector<float> depths;
+    const cv::Mat depthTransformation = pose.row(2).colRange(0, 3).t();
+    const float depthTranslation = pose.at<float>(2, 3);
+
+    for (const auto& p : points) {
+        depths.push_back(static_cast<float>(
+            depthTransformation.dot(cv::Mat(p->getWorldPos(), false))
+        ) + depthTranslation);
+    }
+    std::sort(depths.begin(), depths.end());
+    return depths[depths.size() / 2];
+}
+
 };
