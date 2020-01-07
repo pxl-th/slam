@@ -1,4 +1,7 @@
 #pragma warning(push, 0)
+#include<algorithm>
+#include<unordered_set>
+
 #include<opencv2/core.hpp>
 #include<opencv2/calib3d.hpp>
 #pragma warning(pop)
@@ -21,10 +24,12 @@ void Mapper::addKeyframe(std::shared_ptr<KeyFrame> keyframe) {
 void Mapper::_processKeyFrame() {
     currentKeyFrame = keyframeQueue.front();
     keyframeQueue.pop();
-
+    // For current KeyFrame create connections with other KeyFrames,
+    // that share enough mappoints with it.
     _createConnections(currentKeyFrame);
     auto currentCenter = currentKeyFrame->getCameraCenter();
-
+    // For each connection triangulate matches and add
+    // new MapPoints to the map if they pass outliers test.
     for (const auto& [keyframe, connections] : currentKeyFrame->connections) {
         auto keyframeCenter = keyframe->getCameraCenter();
         auto matches = matcher.frameMatch(
@@ -53,6 +58,8 @@ void Mapper::_processKeyFrame() {
         }
     }
     map->addKeyframe(currentKeyFrame);
+
+    _fuseDuplicates();
     /* optimizer::globalBundleAdjustment(map); */
 
     std::cout
@@ -178,6 +185,71 @@ std::tuple<cv::Mat, cv::Mat> Mapper::_recoverPose(
     translation.copyTo(pose.rowRange(0, 3).col(3));
 
     return {pose, mask};
+}
+
+void Mapper::_fuseDuplicates() {
+    size_t startIdx = std::max(
+        static_cast<int>(map->getKeyframes().size()) - 3, 0
+    );
+    for (size_t i = startIdx; i < map->getKeyframes().size(); i++) {
+        auto keyframe = map->getKeyframes()[i];
+        int connectionId = 0;
+        for (auto& connection : keyframe->connections) {
+            if (connectionId++ == 3) break;
+            std::shared_ptr<KeyFrame> connectionK = std::get<0>(connection);
+            _keyframeDuplicates(keyframe, connectionK);
+        }
+    }
+}
+
+void Mapper::_keyframeDuplicates(
+    std::shared_ptr<KeyFrame>& keyframe1, std::shared_ptr<KeyFrame>& keyframe2
+) {
+    std::unordered_set<std::shared_ptr<MapPoint>> duplicates;
+
+    for (auto& [id1, mappoint1] : keyframe1->mappoints)
+        for (auto& [id2, mappoint2] : keyframe2->mappoints)
+            if (_isDuplicate(mappoint1, id1, mappoint2, id2))
+                duplicates.insert(mappoint2);
+
+    std::cout << "Duplicates " << duplicates.size() << std::endl;
+    std::cout << "Mappoints " << map->getMappoints().size() << std::endl;
+
+    for (auto duplicate : duplicates) {
+        map->removeMappoint(duplicate);
+        for (auto& [keyframe, id] : duplicate->getObservations())
+            keyframe->removeMapPoint(id);
+    }
+
+    std::cout << "Mappoints " << map->getMappoints().size() << std::endl;
+}
+
+bool Mapper::_isDuplicate(
+    const std::shared_ptr<MapPoint>& mappoint1, const int feature1,
+    const std::shared_ptr<MapPoint>& mappoint2, const int feature2,
+    const int descriptorDistance, const double pointDistance
+) const {
+    bool sameFeatures, closeDescriptors, closePoints;
+    std::vector<cv::DMatch> match;
+
+    sameFeatures = feature1 == feature2;
+    matcher.matcher->match(
+        mappoint1->keyframe->getFrame()->descriptors->row(feature1),
+        mappoint2->keyframe->getFrame()->descriptors->row(feature2),
+        match
+    );
+    closeDescriptors = (
+        (match.size() > 0) && match[0].distance <= descriptorDistance
+    );
+    if (sameFeatures && closeDescriptors) return true;
+    if (sameFeatures || closeDescriptors) {
+        closePoints = (
+            cv::norm(mappoint1->getWorldPos() - mappoint2->getWorldPos())
+            < pointDistance
+        );
+        if (closePoints) return true;
+    }
+    return false;
 }
 
 };

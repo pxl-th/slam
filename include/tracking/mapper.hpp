@@ -58,6 +58,21 @@ private:
         std::vector<cv::Point2f>& frame2Points,
         const cv::Mat& cameraMatrix
     );
+    /**
+     * Find MapPoint duplicates in the map and fuse them into one
+     * thus removing duplicates.
+     */
+    void _fuseDuplicates();
+
+    void _keyframeDuplicates(
+        std::shared_ptr<KeyFrame>& keyframe1, std::shared_ptr<KeyFrame>& keyframe2
+    );
+
+    bool _isDuplicate(
+        const std::shared_ptr<MapPoint>& mappoint1, const int feature1,
+        const std::shared_ptr<MapPoint>& mappoint2, const int feature2,
+        const int descriptorDistance = 50, const double pointDistance = 1E-2
+    ) const;
 };
 
 };

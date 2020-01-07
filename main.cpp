@@ -114,10 +114,10 @@ int main() {
         /* if (n++ == 2) break; */
         if (tracker.state == slam::Tracker::INITIALIZED) {
             s = 3;
-            /* if (tracker.map->getKeyframes().size() == 7) { */
-            /*     std::cout << "enough is enough" << std::endl; */
-            /*     break; */
-            /* } */
+            if (tracker.map->getKeyframes().size() == 10) {
+                std::cout << "enough is enough" << std::endl;
+                break;
+            }
         }
     }
 

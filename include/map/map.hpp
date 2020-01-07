@@ -23,6 +23,8 @@ public:
     std::vector<std::shared_ptr<MapPoint>> getMappoints() const;
 
     void addMappoint(std::shared_ptr<MapPoint> mappoint);
+
+    void removeMappoint(std::shared_ptr<MapPoint>& mappoint);
 };
 
 };

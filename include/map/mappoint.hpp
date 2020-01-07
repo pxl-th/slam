@@ -20,6 +20,7 @@ private:
      * Position of the MapPoint in space.
      */
     cv::Point3f position;
+public:
     /**
      * Main KeyFrame from which this MapPoint was created.
      */

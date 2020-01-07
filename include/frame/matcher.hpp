@@ -13,7 +13,7 @@
 namespace slam {
 
 class Matcher{
-private:
+public:
     cv::Ptr<cv::BFMatcher> matcher;
 public:
     Matcher() : matcher(cv::BFMatcher::create(cv::BFMatcher::BRUTEFORCE_HAMMING, true)) {}
@@ -36,7 +36,6 @@ public:
         std::shared_ptr<Frame> frame1, std::shared_ptr<Frame> frame2,
         float maximumDistance, float areaSize = -1, int maxLevel = 4
     );
-
     /**
      * Find matches between KeyFrames.
      *
