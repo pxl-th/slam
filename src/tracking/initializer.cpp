@@ -21,32 +21,31 @@ std::shared_ptr<Map> Initializer::initializeMap(
     const std::vector<cv::DMatch>& matches, const cv::Mat& outliersMask
 ) {
     auto map = std::make_shared<Map>();
+    reference->setPose(cv::Mat::eye(4, 4, CV_32F)); // Wrong pose!!!! for reprojection
     current->setPose(pose);
-    // current -- query, reference -- train
     map->addKeyframe(reference);
     map->addKeyframe(current);
 
     // Add observations to mappoints and add mappoints to map.
     for (size_t i = 0, j = 0; i < matches.size(); i++) {
         if (outliersMask.at<uchar>(static_cast<int>(i)) == 0) continue;
+        auto point = reconstructedPoints[j++];
+        if (isOutlier(point, reference, current, matches[i]))
+            continue;
 
-        auto mappoint = std::make_shared<MapPoint>(
-            reconstructedPoints[j++], current
-        );
+        auto mappoint = std::make_shared<MapPoint>(point, current);
+        mappoint->addObservation(reference, matches[i].queryIdx);
+        mappoint->addObservation(current, matches[i].trainIdx);
 
-        mappoint->addObservation(current, matches[i].queryIdx);
-        mappoint->addObservation(reference, matches[i].trainIdx);
-
-        current->addMapPoint(matches[i].queryIdx, mappoint);
-        reference->addMapPoint(matches[i].trainIdx, mappoint);
+        reference->addMapPoint(matches[i].queryIdx, mappoint);
+        current->addMapPoint(matches[i].trainIdx, mappoint);
 
         map->addMappoint(mappoint);
     }
 
-    optimizer::globalBundleAdjustment(map, 20);
-
     float inverseMedianDepth = 1.0f / reference->medianDepth();
-    // TODO: assert that depth is positive
+    std::cout << inverseMedianDepth << std::endl;
+    // TODO: assert that depth is positive, why?
 
     // Scale translation by inverse median depth.
     auto currentPose = current->getPose();
@@ -58,6 +57,7 @@ std::shared_ptr<Map> Initializer::initializeMap(
     for (auto& [id, p] : reference->getMapPoints())
         p->setWorldPos(p->getWorldPos() * inverseMedianDepth);
 
+    optimizer::globalBundleAdjustment(map, 20);
     return map;
 }
 

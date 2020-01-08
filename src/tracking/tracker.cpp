@@ -2,6 +2,7 @@
 #include<iostream>
 #pragma warning(pop)
 
+#include"converter.hpp"
 #include"tracking/mapper.hpp"
 #include"tracking/tracker.hpp"
 #include"tracking/optimizer.hpp"
@@ -31,7 +32,6 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
         lastKeyFrame = map->getKeyframes()[1];
         break;
     case INITIALIZED:
-        // TODO: check for relocalisation before tracking
         const bool motionTracking = (
             useMotion
             && !velocity.empty()
@@ -40,7 +40,7 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
 
         std::cout
             << "[tracking] last keyframe "
-            << lastKeyFrame->getMapPoints().size() << std::endl;
+            << lastKeyFrame->mappointsNumber() << std::endl;
         bool successfulTracking = false;
         if (motionTracking) successfulTracking = _trackMotionFrame();
         if (!successfulTracking) successfulTracking = _trackFrame();
@@ -48,8 +48,14 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
         std::cout
             << "[tracking] Successful tracking "
             << successfulTracking << std::endl;
-        mapper.addKeyframe(currentKeyFrame);
-        // else -> remove references to currentKeyFrame from mappoints
+
+        if (currentKeyFrame->mappointsNumber() < 15) {
+            mapper.addKeyframe(currentKeyFrame);
+        } else {
+            for (const auto [i, mappoint] : currentKeyFrame->mappoints)
+                mappoint->removeObservation(currentKeyFrame);
+        }
+
         lastKeyFrame = currentKeyFrame;
         break;
     }
@@ -60,11 +66,12 @@ bool Tracker::_initialize() {
     auto currentFrame = currentKeyFrame->getFrame();
 
     initializer = Initializer(initialKeyFrame);
-    auto matches = matcher.frameMatch(currentFrame, initialFrame, 300, 50);
+    auto matches = matcher.frameMatch(initialFrame, currentFrame, 300, 50);
+    std::cout << "[initialization] Matches " << matches.size() << std::endl;
     if (matches.size() < 100) return false;
 
     auto [reconstructedPoints, pose, mask] = std::get<0>(Mapper::triangulatePoints(
-        currentKeyFrame, initialKeyFrame, matches, true
+        initialKeyFrame, currentKeyFrame, matches, true
     ));
     map = initializer.initializeMap(
         currentKeyFrame, pose, reconstructedPoints, matches, mask
@@ -75,8 +82,7 @@ bool Tracker::_initialize() {
 
 bool Tracker::_trackFrame() {
     std::cout << "[tracking] Frame" << std::endl;
-    const auto& lastMappoints = lastKeyFrame->getMapPoints();
-
+    const auto& lastMappoints = lastKeyFrame->mappoints;
     // Add matched mappoints to current keyframe.
     auto matches = matcher.frameMatch(
         lastKeyFrame->getFrame(), currentKeyFrame->getFrame(), 300, 50
@@ -117,7 +123,7 @@ bool Tracker::_trackMotionFrame() {
             lastKeyFrame, currentKeyFrame, 300, 50, -1
         );
     }
-    _addMatches(currentKeyFrame, lastKeyFrame->getMapPoints(), projectionMatches);
+    _addMatches(currentKeyFrame, lastKeyFrame->mappoints, projectionMatches);
     optimizer::poseOptimization(currentKeyFrame);
     return currentKeyFrame->mappointsNumber() >= 10;
 }
@@ -132,9 +138,15 @@ void Tracker::_addMatches(
         if (exist == lastMappoints.end()) continue;
 
         auto& mappoint = exist->second;
-        mappoint->addObservation(currentKeyFrame, match.trainIdx);
-        currentKeyFrame->addMapPoint(match.trainIdx, mappoint);
+        mappoint->addObservation(keyframe, match.trainIdx);
+        keyframe->addMapPoint(match.trainIdx, mappoint);
     }
+}
+
+void Tracker::_removeMatches(std::shared_ptr<KeyFrame> keyframe) {
+    for (const auto& [i, mappoint] : keyframe->mappoints)
+        mappoint->removeObservation(keyframe);
+    keyframe->mappoints.clear();
 }
 
 void Tracker::_updateMotion(bool successfulTracking) {

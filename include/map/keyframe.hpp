@@ -22,12 +22,12 @@ class KeyFrame {
 private:
     std::shared_ptr<Frame> frame;
     cv::Mat pose, cameraCenter;
+public:
     /**
      * Map with `{keypoint id : mappoint}` elements,
      * where `keypoint id` is for the current frame's keypoint.
      */
     std::map<int, std::shared_ptr<MapPoint>> mappoints;
-public:
     /**
      * Map with `{keyframe : connections}` elements,
      * where `connections` is the number of mappoints that
@@ -53,6 +53,8 @@ public:
 
     void addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint);
 
+    void removeMapPoint(int keypointId);
+
     std::map<int, std::shared_ptr<MapPoint>> getMapPoints() const;
 
     size_t mappointsNumber() const;
@@ -72,6 +74,7 @@ public:
      * @return Median depth.
      */
     float medianDepth() const;
+    float medianDepth(std::vector<std::shared_ptr<MapPoint>> points) const;
 };
 
 };

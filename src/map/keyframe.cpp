@@ -28,17 +28,15 @@ cv::Mat KeyFrame::getCameraCenter() const { return cameraCenter.clone(); }
 
 std::shared_ptr<Frame> KeyFrame::getFrame() const { return frame; }
 
-/* void KeyFrame::addMapPoint(std::shared_ptr<MapPoint> mapPoint) { */
-/*     mapPoints.push_back(mapPoint); */
-/* } */
-
 void KeyFrame::addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint) {
     mappoints[keypointId] = mapPoint;
 }
 
-/* std::vector<std::shared_ptr<MapPoint>> KeyFrame::getMapPoints() const { */
-/*     return mapPoints; */
-/* } */
+void KeyFrame::removeMapPoint(int keypointId) {
+    auto mp = mappoints.find(keypointId);
+    if (mp != mappoints.end())
+        mappoints.erase(mp);
+}
 
 std::map<int, std::shared_ptr<MapPoint>> KeyFrame::getMapPoints() const {
     return mappoints;
@@ -54,6 +52,20 @@ float KeyFrame::medianDepth() const {
     const float depthTranslation = pose.at<float>(2, 3);
 
     for (const auto& [i, p] : mappoints) {
+        depths.push_back(static_cast<float>(
+            depthTransformation.dot(cv::Mat(p->getWorldPos(), false))
+        ) + depthTranslation);
+    }
+    std::sort(depths.begin(), depths.end());
+    return depths[depths.size() / 2];
+}
+
+float KeyFrame::medianDepth(std::vector<std::shared_ptr<MapPoint>> points) const {
+    std::vector<float> depths;
+    const cv::Mat depthTransformation = pose.row(2).colRange(0, 3).t();
+    const float depthTranslation = pose.at<float>(2, 3);
+
+    for (const auto& p : points) {
         depths.push_back(static_cast<float>(
             depthTransformation.dot(cv::Mat(p->getWorldPos(), false))
         ) + depthTranslation);

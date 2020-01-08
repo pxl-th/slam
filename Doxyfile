@@ -25,7 +25,6 @@ FILE_PATTERNS          = *.c \
                          *.h++ \
 
 RECURSIVE              = YES
-USE_MATHJAX            = YES
 
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html
@@ -33,3 +32,6 @@ HTML_FILE_EXTENSION    = .html
 
 GENERATE_LATEX         = NO
 LATEX_OUTPUT           = latex
+USE_MATHJAX            = YES
+MATHJAX_EXTENSIONS     = TeX/AMSmath
+EXTRA_PACKAGES         = amsmath
