@@ -187,15 +187,15 @@ std::tuple<cv::Mat, cv::Mat> Mapper::_recoverPose(
     return {pose, mask};
 }
 
-void Mapper::_fuseDuplicates() {
+void Mapper::_fuseDuplicates(const int keyframes, const int connections) {
     size_t startIdx = std::max(
-        static_cast<int>(map->getKeyframes().size()) - 3, 0
+        static_cast<int>(map->getKeyframes().size()) - keyframes, 0
     );
     for (size_t i = startIdx; i < map->getKeyframes().size(); i++) {
         auto keyframe = map->getKeyframes()[i];
         int connectionId = 0;
         for (auto& connection : keyframe->connections) {
-            if (connectionId++ == 3) break;
+            if (connectionId++ == connections) break;
             std::shared_ptr<KeyFrame> connectionK = std::get<0>(connection);
             _keyframeDuplicates(keyframe, connectionK);
         }
@@ -206,22 +206,17 @@ void Mapper::_keyframeDuplicates(
     std::shared_ptr<KeyFrame>& keyframe1, std::shared_ptr<KeyFrame>& keyframe2
 ) {
     std::unordered_set<std::shared_ptr<MapPoint>> duplicates;
-
+    // Find MapPoint duplicate candidates.
     for (auto& [id1, mappoint1] : keyframe1->mappoints)
         for (auto& [id2, mappoint2] : keyframe2->mappoints)
             if (_isDuplicate(mappoint1, id1, mappoint2, id2))
                 duplicates.insert(mappoint2);
-
-    std::cout << "Duplicates " << duplicates.size() << std::endl;
-    std::cout << "Mappoints " << map->getMappoints().size() << std::endl;
-
+    // Remove duplicates.
     for (auto duplicate : duplicates) {
         map->removeMappoint(duplicate);
         for (auto& [keyframe, id] : duplicate->getObservations())
             keyframe->removeMapPoint(id);
     }
-
-    std::cout << "Mappoints " << map->getMappoints().size() << std::endl;
 }
 
 bool Mapper::_isDuplicate(
