@@ -70,8 +70,8 @@ bool isOutlier(
     ) return true;
     // Check reprojection error.
     if (
-        projectionError(queryKeyframe, point, match.queryIdx) > 2 ||
-        projectionError(trainKeyframe, point, match.trainIdx) > 2
+        projectionError(queryKeyframe, point, match.queryIdx) > 1 ||
+        projectionError(trainKeyframe, point, match.trainIdx) > 1
     ) return true;
     return false;
 }

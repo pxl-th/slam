@@ -25,6 +25,9 @@ void Mapper::_processKeyFrame() {
     currentKeyFrame = keyframeQueue.front();
     keyframeQueue.pop();
     std::cout << "[mapping] KeyFrame id " << currentKeyFrame->id << std::endl;
+    std::cout << "[mapping] Map KF ids" << std::endl;
+    for (const auto& keyframe : map->getKeyframes())
+        std::cout << keyframe->id << std::endl;
     // For current KeyFrame create connections with other KeyFrames,
     // that share enough mappoints with it.
     _createConnections(currentKeyFrame);
@@ -63,6 +66,7 @@ void Mapper::_processKeyFrame() {
 
             map->addMappoint(mappoint);
         }
+        // TODO check mappoint number before and after (should remain the same) for KFs
         _keyframeDuplicates(currentKeyFrame, keyframe);
 
         std::cout << "Total outliers " << no << std::endl;
@@ -74,6 +78,7 @@ void Mapper::_processKeyFrame() {
         << currentKeyFrame->mappointsNumber() << std::endl;
 
     _fuseDuplicates();
+
     std::cout
         << "[mapping] Mapped mappoints "
         << currentKeyFrame->mappointsNumber() << std::endl;
@@ -113,14 +118,22 @@ void Mapper::_createConnections(
     int maxCount = 0;
     for (const auto [keyframe, count] : counter) {
         if (count > maxCount) maxCount = count;
-        if (count < threshold) continue;
+        if (count < threshold) {
+            continue;
+            /* auto matches = matcher.frameMatch( */
+            /*     keyframe->getFrame(), targetKeyFrame->getFrame(), 300 */
+            /* ); */
+            /* std::cout */
+            /*     << "[mapping] Matches with KF " << keyframe->id */
+            /*     << " | " << matches.size() << std::endl; */
+            /* if (matches.size() < 100) continue; */
+        }
         std::cout << keyframe->id << " | " << count << std::endl;
         targetKeyFrame->connections[keyframe] = count;
         keyframe->connections[targetKeyFrame] = count;
     }
     // If no KeyFrame's have been found --- add KeyFrame with maximum count.
     if (targetKeyFrame->connections.empty()) {
-        threshold = maxCount;
         for (const auto [keyframe, count] : counter) {
             if (count < maxCount) continue;
             targetKeyFrame->connections[keyframe] = count;
@@ -241,8 +254,8 @@ void Mapper::_keyframeDuplicates(
     // Find MapPoint duplicate candidates.
     for (auto& [id1, mappoint1] : keyframe1->mappoints) {
         for (auto& [id2, mappoint2] : keyframe2->mappoints) {
-            if (!_isDuplicate(mappoint1, id1, mappoint2, id2))
-                continue;
+            if (mappoint1 == mappoint2) continue;
+            if (!_isDuplicate(mappoint1, id1, mappoint2, id2)) continue;
             // TODO: retain one with smaller reprojection error
             duplicates.insert(mappoint2);
             replacements.push_back({mappoint1, keyframe2, id2});

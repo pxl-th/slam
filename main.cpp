@@ -93,7 +93,7 @@ int main() {
         if (tracker.state == slam::Tracker::LOST) break;
         else if (tracker.state == slam::Tracker::INITIALIZED) {
             s = 3;
-            if (tracker.map->getKeyframes().size() == 5) {
+            if (tracker.map->getKeyframes().size() == 30) {
                 std::cout << "enough is enough" << std::endl;
                 break;
             }
