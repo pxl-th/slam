@@ -53,6 +53,8 @@ public:
 
     void addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint);
 
+    bool existMapPoint(int keypointId) const;
+
     void removeMapPoint(int keypointId);
 
     std::map<int, std::shared_ptr<MapPoint>> getMapPoints() const;

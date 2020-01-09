@@ -21,7 +21,8 @@ public:
     enum States {
         NO_IMAGES,
         UNINITIALIZED,
-        INITIALIZED
+        INITIALIZED,
+        LOST
     };
 private:
     std::shared_ptr<cv::Mat> cameraMatrix, distortions;

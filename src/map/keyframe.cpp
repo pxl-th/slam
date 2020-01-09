@@ -32,6 +32,10 @@ void KeyFrame::addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint) {
     mappoints[keypointId] = mapPoint;
 }
 
+bool KeyFrame::existMapPoint(int keypointId) const {
+    return mappoints.find(keypointId) != mappoints.end();
+}
+
 void KeyFrame::removeMapPoint(int keypointId) {
     auto mp = mappoints.find(keypointId);
     if (mp != mappoints.end())

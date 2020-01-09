@@ -49,7 +49,12 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
             << "[tracking] Successful tracking "
             << successfulTracking << std::endl;
 
-        if (currentKeyFrame->mappointsNumber() < 15) {
+        if (!successfulTracking) {
+            state = LOST;
+            return;
+        }
+
+        if (currentKeyFrame->mappointsNumber() < 50) {
             mapper.addKeyframe(currentKeyFrame);
         } else {
             for (const auto [i, mappoint] : currentKeyFrame->mappoints)
@@ -113,6 +118,7 @@ bool Tracker::_trackFrame() {
 }
 
 bool Tracker::_trackMotionFrame() {
+    std::cout << "[tracking] Motion" << std::endl;
     currentKeyFrame->setPose(velocity * lastKeyFrame->getPose());
 
     auto projectionMatches = matcher.projectionMatch(
@@ -141,12 +147,6 @@ void Tracker::_addMatches(
         mappoint->addObservation(keyframe, match.trainIdx);
         keyframe->addMapPoint(match.trainIdx, mappoint);
     }
-}
-
-void Tracker::_removeMatches(std::shared_ptr<KeyFrame> keyframe) {
-    for (const auto& [i, mappoint] : keyframe->mappoints)
-        mappoint->removeObservation(keyframe);
-    keyframe->mappoints.clear();
 }
 
 void Tracker::_updateMotion(bool successfulTracking) {

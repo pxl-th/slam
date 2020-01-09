@@ -88,6 +88,9 @@ private:
      * than `pointDistance` \f$ \left\lVert p_1 - p_2 \right\rVert < d \f$,
      * where \f$d\f$ --- `pointDistance`.
      *
+     * If at least two of the three test pass --- mappoints are
+     * considered to be outliers.
+     *
      * @param mappoint1 First MapPoint.
      * @param feature1 Id of the feature to which first MapPoint corresponds.
      * @param mappoint2 Second MapPoint.
