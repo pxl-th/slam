@@ -87,7 +87,7 @@ bool Tracker::_initialize() {
 
 bool Tracker::_trackFrame() {
     std::cout << "[tracking] Frame" << std::endl;
-    const auto& lastMappoints = lastKeyFrame->mappoints;
+    auto& lastMappoints = lastKeyFrame->mappoints;
     // Add matched mappoints to current keyframe.
     auto matches = matcher.frameMatch(
         lastKeyFrame->getFrame(), currentKeyFrame->getFrame(), 300, 50
@@ -107,7 +107,7 @@ bool Tracker::_trackFrame() {
     optimizer::poseOptimization(currentKeyFrame);
 
     auto projectionMatches = matcher.projectionMatch(
-        lastKeyFrame, currentKeyFrame, 250, 20
+        lastKeyFrame, currentKeyFrame, 250, 50
     );
     _addMatches(currentKeyFrame, lastMappoints, matches);
     std::cout
@@ -122,11 +122,11 @@ bool Tracker::_trackMotionFrame() {
     currentKeyFrame->setPose(velocity * lastKeyFrame->getPose());
 
     auto projectionMatches = matcher.projectionMatch(
-        lastKeyFrame, currentKeyFrame, 250, 40
+        lastKeyFrame, currentKeyFrame, 250, 50
     );
-    if (currentKeyFrame->mappointsNumber() < 10) {
+    if (currentKeyFrame->mappointsNumber() < 30) {
         projectionMatches = matcher.projectionMatch(
-            lastKeyFrame, currentKeyFrame, 300, 50, -1
+            lastKeyFrame, currentKeyFrame, 300, -1, -1
         );
     }
     _addMatches(currentKeyFrame, lastKeyFrame->mappoints, projectionMatches);
@@ -136,10 +136,10 @@ bool Tracker::_trackMotionFrame() {
 
 void Tracker::_addMatches(
     std::shared_ptr<KeyFrame> keyframe,
-    const std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
+    std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
     const std::vector<cv::DMatch>& matches
 ) {
-    for (const auto& match : matches) {
+    for (auto match : matches) {
         auto exist = lastMappoints.find(match.queryIdx);
         if (exist == lastMappoints.end()) continue;
 

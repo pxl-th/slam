@@ -29,6 +29,7 @@ cv::Mat KeyFrame::getCameraCenter() const { return cameraCenter.clone(); }
 std::shared_ptr<Frame> KeyFrame::getFrame() const { return frame; }
 
 void KeyFrame::addMapPoint(int keypointId, std::shared_ptr<MapPoint> mapPoint) {
+    if (frame->descriptors->rows < keypointId) assert(false);
     mappoints[keypointId] = mapPoint;
 }
 

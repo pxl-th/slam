@@ -67,7 +67,7 @@ private:
      * @param connections Number of connection KeyFrames to consider,
      * for a current KeyFrame, when finding duplicates.
      */
-    void _fuseDuplicates(const int keyframes = 3, const int connections = 3);
+    void _removeDuplicates(const int keyframes = 3, const int connections = 3);
     /**
      * Find MapPoint duplicates between two KeyFrames.
      *
@@ -105,8 +105,8 @@ private:
      * `false` --- otherwise.
      */
     bool _isDuplicate(
-        const std::shared_ptr<MapPoint>& mappoint1, const int feature1,
-        const std::shared_ptr<MapPoint>& mappoint2, const int feature2,
+        const std::shared_ptr<MapPoint>& mappoint1, const cv::Mat& descriptor1,
+        const std::shared_ptr<MapPoint>& mappoint2, const cv::Mat& descriptor2,
         const int descriptorDistance = 50, const double pointDistance = 1E-2
     ) const;
 };

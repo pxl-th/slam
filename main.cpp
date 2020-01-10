@@ -75,6 +75,30 @@ void drawMap(std::shared_ptr<slam::Map> map) {
     }
 }
 
+cv::Mat drawMatches(
+    std::shared_ptr<slam::KeyFrame> keyframe1,
+    std::shared_ptr<slam::KeyFrame> keyframe2
+) {
+    slam::Matcher matcher;
+
+    auto matches = matcher.frameMatch(
+        keyframe1->getFrame(), keyframe2->getFrame(), 300, 50
+    );
+
+    cv::Mat matchImg;
+    cv::drawMatches(
+        *keyframe1->getFrame()->image,
+        keyframe1->getFrame()->undistortedKeypoints,
+        *keyframe2->getFrame()->image,
+        keyframe1->getFrame()->undistortedKeypoints,
+        matches,
+        matchImg
+    );
+
+    return matchImg;
+
+}
+
 int main() {
     auto calibration = getCalibration(false);
     auto detector = std::shared_ptr<slam::Detector>(new slam::Detector(
@@ -93,10 +117,10 @@ int main() {
         if (tracker.state == slam::Tracker::LOST) break;
         else if (tracker.state == slam::Tracker::INITIALIZED) {
             s = 3;
-            if (tracker.map->getKeyframes().size() == 30) {
-                std::cout << "enough is enough" << std::endl;
-                break;
-            }
+            /* if (tracker.map->getKeyframes().size() == 30) { */
+            /*     std::cout << "enough is enough" << std::endl; */
+            /*     break; */
+            /* } */
         }
 
         cv::Mat frame;
@@ -113,6 +137,9 @@ int main() {
         );
         cv::resize(frame, frame, cv::Size(0, 0), scale, scale);
 
+        /* if (tracker.state == slam::Tracker::INITIALIZED) */
+        /*     imshow("henlo", drawMatches(tracker.lastKeyFrame, tracker.currentKeyFrame)); */
+        /* else */
         imshow("henlo", frame);
         if (cv::waitKey(1) == 'q') break;
         std::cout << "====================" << std::endl;

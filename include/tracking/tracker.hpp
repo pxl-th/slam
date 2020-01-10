@@ -24,7 +24,7 @@ public:
         INITIALIZED,
         LOST
     };
-private:
+public:
     std::shared_ptr<cv::Mat> cameraMatrix, distortions;
 
     std::shared_ptr<KeyFrame>
@@ -125,7 +125,7 @@ private:
      */
     void _addMatches(
         std::shared_ptr<KeyFrame> keyframe,
-        const std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
+        std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
         const std::vector<cv::DMatch>& matches
     );
     void _removeMatches(std::shared_ptr<KeyFrame> keyframe);
