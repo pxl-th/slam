@@ -49,7 +49,12 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
             << "[tracking] Successful tracking "
             << successfulTracking << std::endl;
 
-        if (currentKeyFrame->mappointsNumber() < 15) {
+        if (!successfulTracking) {
+            state = LOST;
+            return;
+        }
+
+        if (currentKeyFrame->mappointsNumber() < 50) {
             mapper.addKeyframe(currentKeyFrame);
         } else {
             for (const auto [i, mappoint] : currentKeyFrame->mappoints)
@@ -82,7 +87,7 @@ bool Tracker::_initialize() {
 
 bool Tracker::_trackFrame() {
     std::cout << "[tracking] Frame" << std::endl;
-    const auto& lastMappoints = lastKeyFrame->mappoints;
+    auto& lastMappoints = lastKeyFrame->mappoints;
     // Add matched mappoints to current keyframe.
     auto matches = matcher.frameMatch(
         lastKeyFrame->getFrame(), currentKeyFrame->getFrame(), 300, 50
@@ -102,7 +107,7 @@ bool Tracker::_trackFrame() {
     optimizer::poseOptimization(currentKeyFrame);
 
     auto projectionMatches = matcher.projectionMatch(
-        lastKeyFrame, currentKeyFrame, 250, 20
+        lastKeyFrame, currentKeyFrame, 250, 50
     );
     _addMatches(currentKeyFrame, lastMappoints, matches);
     std::cout
@@ -113,14 +118,15 @@ bool Tracker::_trackFrame() {
 }
 
 bool Tracker::_trackMotionFrame() {
+    std::cout << "[tracking] Motion" << std::endl;
     currentKeyFrame->setPose(velocity * lastKeyFrame->getPose());
 
     auto projectionMatches = matcher.projectionMatch(
-        lastKeyFrame, currentKeyFrame, 250, 40
+        lastKeyFrame, currentKeyFrame, 250, 50
     );
-    if (currentKeyFrame->mappointsNumber() < 10) {
+    if (currentKeyFrame->mappointsNumber() < 30) {
         projectionMatches = matcher.projectionMatch(
-            lastKeyFrame, currentKeyFrame, 300, 50, -1
+            lastKeyFrame, currentKeyFrame, 300, -1, -1
         );
     }
     _addMatches(currentKeyFrame, lastKeyFrame->mappoints, projectionMatches);
@@ -130,7 +136,7 @@ bool Tracker::_trackMotionFrame() {
 
 void Tracker::_addMatches(
     std::shared_ptr<KeyFrame> keyframe,
-    const std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
+    std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
     const std::vector<cv::DMatch>& matches
 ) {
     for (const auto& match : matches) {
@@ -141,12 +147,6 @@ void Tracker::_addMatches(
         mappoint->addObservation(keyframe, match.trainIdx);
         keyframe->addMapPoint(match.trainIdx, mappoint);
     }
-}
-
-void Tracker::_removeMatches(std::shared_ptr<KeyFrame> keyframe) {
-    for (const auto& [i, mappoint] : keyframe->mappoints)
-        mappoint->removeObservation(keyframe);
-    keyframe->mappoints.clear();
 }
 
 void Tracker::_updateMotion(bool successfulTracking) {

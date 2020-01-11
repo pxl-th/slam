@@ -49,20 +49,19 @@ cameraFromKeyFrame(std::shared_ptr<slam::KeyFrame> keyframe) {
 
 void drawMap(std::shared_ptr<slam::Map> map) {
     std::cout
-        << "Map contains " << map->getMappoints().size()
-        << " points" << std::endl;
+        << "Map contains " << map->getMappoints().size() << " points "
+        << "and " << map->getKeyframes().size() << " keyframes" << std::endl;
+    /* Visualization */
     std::vector<std::tuple<cv::viz::WCameraPosition, cv::Affine3d>> cameras;
     for (const auto& keyframe : map->getKeyframes())
         cameras.push_back(cameraFromKeyFrame(keyframe));
 
-    /* Visualization */
     std::vector<cv::Point3f> adjustedPoints;
     for (const auto& p : map->getMappoints())
         adjustedPoints.push_back(p->getWorldPos());
 
     cv::viz::Viz3d window("slam");
     cv::viz::WCloud cloud(adjustedPoints, cv::viz::Color::red());
-    /* cv::viz::WCoordinateSystem coordinateSystem; */
     int cameraId = 0;
     while (!window.wasStopped()) {
         for (const auto& [cameraWidget, cameraPosition] : cameras) {
@@ -71,10 +70,33 @@ void drawMap(std::shared_ptr<slam::Map> map) {
                 cameraWidget, cameraPosition
             );
         }
-        /* window.showWidget("CS", coordinateSystem); */
         window.showWidget("cloud", cloud);
         window.spinOnce(1, true);
     }
+}
+
+cv::Mat drawMatches(
+    std::shared_ptr<slam::KeyFrame> keyframe1,
+    std::shared_ptr<slam::KeyFrame> keyframe2
+) {
+    slam::Matcher matcher;
+
+    auto matches = matcher.frameMatch(
+        keyframe1->getFrame(), keyframe2->getFrame(), 300, 50
+    );
+
+    cv::Mat matchImg;
+    cv::drawMatches(
+        *keyframe1->getFrame()->image,
+        keyframe1->getFrame()->undistortedKeypoints,
+        *keyframe2->getFrame()->image,
+        keyframe1->getFrame()->undistortedKeypoints,
+        matches,
+        matchImg
+    );
+
+    return matchImg;
+
 }
 
 int main() {
@@ -89,11 +111,23 @@ int main() {
         std::cerr << "Cannot open file" << std::endl;
         return -1;
     }
+    int totalFrames = 0;
     int n = 0, i = 0, s = 35;
     while (true) {
+        /* if (n++ == 2) break; */
+        if (tracker.state == slam::Tracker::LOST) break;
+        else if (tracker.state == slam::Tracker::INITIALIZED) {
+            s = 3;
+            /* if (tracker.map->getKeyframes().size() == 30) { */
+            /*     std::cout << "enough is enough" << std::endl; */
+            /*     break; */
+            /* } */
+        }
+
         cv::Mat frame;
         capture >> frame;
         if (frame.empty()) break;
+        totalFrames++;
 
         if (i++ % s != 0) continue;
         i = 1;
@@ -105,24 +139,20 @@ int main() {
         );
         cv::resize(frame, frame, cv::Size(0, 0), scale, scale);
 
+        /* if (tracker.state == slam::Tracker::INITIALIZED) */
+        /*     imshow("henlo", drawMatches(tracker.lastKeyFrame, tracker.currentKeyFrame)); */
+        /* else */
         imshow("henlo", frame);
         if (cv::waitKey(1) == 'q') break;
+        std::cout << "====================" << std::endl;
 
         auto currentImage = std::make_shared<cv::Mat>(frame.clone());
         tracker.track(currentImage);
-
-        /* if (n++ == 2) break; */
-        if (tracker.state == slam::Tracker::INITIALIZED) {
-            s = 3;
-            if (tracker.map->getKeyframes().size() == 10) {
-                std::cout << "enough is enough" << std::endl;
-                break;
-            }
-        }
     }
 
     capture.release();
     cv::destroyAllWindows();
 
+    std::cout << "Total Frames processed " << totalFrames << std::endl;
     drawMap(tracker.map);
 }

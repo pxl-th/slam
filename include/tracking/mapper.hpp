@@ -67,7 +67,7 @@ private:
      * @param connections Number of connection KeyFrames to consider,
      * for a current KeyFrame, when finding duplicates.
      */
-    void _fuseDuplicates(const int keyframes = 3, const int connections = 3);
+    void _removeDuplicates(const int keyframes = 3, const int connections = 3);
     /**
      * Find MapPoint duplicates between two KeyFrames.
      *
@@ -88,10 +88,15 @@ private:
      * than `pointDistance` \f$ \left\lVert p_1 - p_2 \right\rVert < d \f$,
      * where \f$d\f$ --- `pointDistance`.
      *
+     * If at least two of the three test pass --- mappoints are
+     * considered to be outliers.
+     *
      * @param mappoint1 First MapPoint.
-     * @param feature1 Id of the feature to which first MapPoint corresponds.
+     * @param descriptor1 Descriptor of the KeyPoint from which
+     * first MapPoint was created.
      * @param mappoint2 Second MapPoint.
-     * @param feature1 Id of the feature to which second MapPoint corresponds.
+     * @param descriptor2 Descriptor of the KeyPoint from which
+     * second MapPoint was created.
      * @param descriptorDistance Descriptors with distance between them
      * lower than this threshold (in terms of Hamming distance)
      * are considered to be duplicates.
@@ -102,9 +107,9 @@ private:
      * `false` --- otherwise.
      */
     bool _isDuplicate(
-        const std::shared_ptr<MapPoint>& mappoint1, const int feature1,
-        const std::shared_ptr<MapPoint>& mappoint2, const int feature2,
-        const int descriptorDistance = 50, const double pointDistance = 1E-2
+        const std::shared_ptr<MapPoint>& mappoint1, const cv::Mat& descriptor1,
+        const std::shared_ptr<MapPoint>& mappoint2, const cv::Mat& descriptor2,
+        const int descriptorDistance = 100, const double pointDistance = 1E-2
     ) const;
 };
 
