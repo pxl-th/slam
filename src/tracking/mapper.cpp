@@ -244,7 +244,6 @@ bool Mapper::_isDuplicate(
     const std::shared_ptr<MapPoint>& mappoint2, const cv::Mat& descriptor2,
     const int descriptorDistance, const double pointDistance
 ) const {
-    // TODO fix doc
     bool closeDescriptors, closePoints;
     std::vector<cv::DMatch> match;
 

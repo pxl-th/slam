@@ -92,9 +92,11 @@ private:
      * considered to be outliers.
      *
      * @param mappoint1 First MapPoint.
-     * @param feature1 Id of the feature to which first MapPoint corresponds.
+     * @param descriptor1 Descriptor of the KeyPoint from which
+     * first MapPoint was created.
      * @param mappoint2 Second MapPoint.
-     * @param feature1 Id of the feature to which second MapPoint corresponds.
+     * @param descriptor2 Descriptor of the KeyPoint from which
+     * second MapPoint was created.
      * @param descriptorDistance Descriptors with distance between them
      * lower than this threshold (in terms of Hamming distance)
      * are considered to be duplicates.
