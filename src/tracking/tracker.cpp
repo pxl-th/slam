@@ -139,7 +139,7 @@ void Tracker::_addMatches(
     std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
     const std::vector<cv::DMatch>& matches
 ) {
-    for (auto match : matches) {
+    for (const auto& match : matches) {
         auto exist = lastMappoints.find(match.queryIdx);
         if (exist == lastMappoints.end()) continue;
 

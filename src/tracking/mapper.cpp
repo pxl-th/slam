@@ -33,7 +33,7 @@ void Mapper::_processKeyFrame() {
     for (auto& connection : currentKeyFrame->connections) {
         auto keyframe = connection.first;
         auto matches = matcher.frameMatch(
-            keyframe->getFrame(), currentKeyFrame->getFrame(), 350, -1
+            keyframe->getFrame(), currentKeyFrame->getFrame(), 300, -1
         );
         if (matches.size() < 10) continue;
         auto points = std::get<1>(triangulatePoints(
@@ -58,20 +58,7 @@ void Mapper::_processKeyFrame() {
         _keyframeDuplicates(currentKeyFrame, keyframe);
     }
     map->addKeyframe(currentKeyFrame);
-
-    std::cout
-        << "[mapping] Mapped mappoints before fusion "
-        << currentKeyFrame->mappointsNumber() << std::endl;
-
     _removeDuplicates();
-
-    std::cout
-        << "[mapping] Mapped mappoints "
-        << currentKeyFrame->mappointsNumber() << std::endl;
-    std::cout
-        << "[mapping] Total keyframes in map "
-        << map->getKeyframes().size() << std::endl;
-
     /* optimizer::globalBundleAdjustment(map); */
     /**
      * - perform BA
@@ -97,8 +84,7 @@ void Mapper::_createConnections(
         }
     }
     std::cout << "[mapping] Counters" << std::endl;
-    for (auto [k, c] : counter)
-        std::cout << k << " | " << k->id << " | " << c << std::endl;
+    for (auto [k, c] : counter) std::cout << k->id << " | " << c << std::endl;
     // Create connections with KeyFrames that more than `threshold`
     // shared MapPoints.
     int maxCount = 0;

@@ -111,6 +111,7 @@ int main() {
         std::cerr << "Cannot open file" << std::endl;
         return -1;
     }
+    int totalFrames = 0;
     int n = 0, i = 0, s = 35;
     while (true) {
         /* if (n++ == 2) break; */
@@ -126,6 +127,7 @@ int main() {
         cv::Mat frame;
         capture >> frame;
         if (frame.empty()) break;
+        totalFrames++;
 
         if (i++ % s != 0) continue;
         i = 1;
@@ -151,5 +153,6 @@ int main() {
     capture.release();
     cv::destroyAllWindows();
 
+    std::cout << "Total Frames processed " << totalFrames << std::endl;
     drawMap(tracker.map);
 }

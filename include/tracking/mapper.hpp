@@ -107,7 +107,7 @@ private:
     bool _isDuplicate(
         const std::shared_ptr<MapPoint>& mappoint1, const cv::Mat& descriptor1,
         const std::shared_ptr<MapPoint>& mappoint2, const cv::Mat& descriptor2,
-        const int descriptorDistance = 50, const double pointDistance = 1E-2
+        const int descriptorDistance = 100, const double pointDistance = 1E-2
     ) const;
 };
 
