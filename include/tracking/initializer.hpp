@@ -29,7 +29,6 @@ public:
      */
     /* std::tuple<std::vector<cv::Point3f>, cv::Mat, cv::Mat> */
     /* initialize(std::shared_ptr<KeyFrame> current, std::vector<cv::DMatch>& matches); */
-
     std::shared_ptr<Map> initializeMap(
         const std::shared_ptr<KeyFrame> current,
         const cv::Mat& pose,

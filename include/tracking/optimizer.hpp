@@ -8,7 +8,6 @@ namespace slam {
  * Namespace contains functions for performing optimizations.
  */
 namespace optimizer {
-
 /**
  * Perform Global Bundle Adjustment on the map.
  * **Note** this updates map in-place.
@@ -26,7 +25,6 @@ namespace optimizer {
  * @param iterations Number of iterations to perform optimization.
  */
 void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations = 20);
-
 /**
  * Perform keyframe's pose optimization.
  *
@@ -41,7 +39,6 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations = 20);
  * @param iterations Number of optimization iterations.
  */
 void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations = 20);
-
 };
 };
 

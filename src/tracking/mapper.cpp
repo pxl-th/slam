@@ -18,46 +18,106 @@ Mapper::Mapper(Matcher matcher) : matcher(matcher) {}
 
 void Mapper::addKeyframe(std::shared_ptr<KeyFrame> keyframe) {
     keyframeQueue.push(keyframe);
-    _processKeyFrame();
 }
 
-void Mapper::_processKeyFrame() {
-    currentKeyFrame = keyframeQueue.front();
+void Mapper::clearQueue() {
+    keyframeQueue = std::queue<std::shared_ptr<KeyFrame>>();
+}
+
+bool Mapper::initialize() {
+    if (keyframeQueue.empty() || keyframeQueue.size() < 2)
+        return false;
+
+    auto initial = keyframeQueue.front(); keyframeQueue.pop();
+    current = keyframeQueue.front(); keyframeQueue.pop();
+
+    auto matches = matcher.frameMatch(
+        initial->getFrame(), current->getFrame(), 300, 50
+    );
+    if (matches.size() < 100) return false;
+    auto [reconstructedPoints, pose, mask] = std::get<0>(triangulatePoints(
+        initial, current, matches, true
+    ));
+
+    std::vector<std::shared_ptr<MapPoint>> mappoints;
+    map = std::make_shared<Map>();
+    initial->setPose(cv::Mat::eye(4, 4, CV_32F));
+    current->setPose(pose);
+    // Construct mappoints omitting outliers.
+    for (size_t i = 0, j = 0; i < matches.size(); i++) {
+        if (mask.at<uchar>(static_cast<int>(i)) == 0) continue;
+        auto point = reconstructedPoints[j++];
+        if (isOutlier(point, initial, current, matches[i]))
+            continue;
+
+        auto mappoint = std::make_shared<MapPoint>(point, current);
+        mappoint->addObservation(initial, matches[i].queryIdx);
+        mappoint->addObservation(current, matches[i].trainIdx);
+
+        initial->addMapPoint(matches[i].queryIdx, mappoint);
+        current->addMapPoint(matches[i].trainIdx, mappoint);
+
+        mappoints.push_back(mappoint);
+    }
+    if (mappoints.empty()) return false;
+
+    float inverseDepth = 1.0f / initial->medianDepth();
+    std::cout << "[initialization] Inverse depth " << inverseDepth << std::endl;
+    if (inverseDepth < 0) return false;
+    // Scale translation by inverse median depth.
+    auto currentPose = current->getPose();
+    currentPose.col(3).rowRange(0, 3) = (
+        currentPose.col(3).rowRange(0, 3) * inverseDepth
+    );
+    current->setPose(currentPose);
+    // Scale mappoints by inverse median depth.
+    for (auto& [id, p] : initial->getMapPoints())
+        p->setWorldPos(p->getWorldPos() * inverseDepth);
+    // Add KeyFrames and MapPoints to map.
+    map->addKeyframe(initial);
+    map->addKeyframe(current);
+    for (auto mappoint : mappoints) map->addMappoint(mappoint);
+    optimizer::globalBundleAdjustment(map, 20);
+    return true;
+}
+
+void Mapper::process() {
+    current = keyframeQueue.front();
     keyframeQueue.pop();
-    std::cout << "[mapping] KeyFrame id " << currentKeyFrame->id << std::endl;
+    std::cout << "[mapping] KeyFrame id " << current->id << std::endl;
     // For current KeyFrame create connections with other KeyFrames,
     // that share enough mappoints with it.
-    _createConnections(currentKeyFrame, 1);
+    _createConnections(current, 1);
     // For each connection triangulate matches and add
     // new MapPoints to the map if they pass outliers test.
-    for (auto& connection : currentKeyFrame->connections) {
+    for (auto& connection : current->connections) {
         auto keyframe = connection.first;
         auto matches = matcher.frameMatch(
-            keyframe->getFrame(), currentKeyFrame->getFrame(), 300, -1
+            keyframe->getFrame(), current->getFrame(), 300, -1
         );
         if (matches.size() < 10) continue;
         auto points = std::get<1>(triangulatePoints(
-            keyframe, currentKeyFrame, matches, false
+            keyframe, current, matches, false
         ));
 
         for (size_t i = 0; i < matches.size(); i++) {
             auto point = points[i]; auto match = matches[i];
-            if (isOutlier(point, keyframe, currentKeyFrame, match))
+            if (isOutlier(point, keyframe, current, match))
                 continue;
 
-            auto mappoint = std::make_shared<MapPoint>(point, currentKeyFrame);
+            auto mappoint = std::make_shared<MapPoint>(point, current);
 
             mappoint->addObservation(keyframe, match.queryIdx);
-            mappoint->addObservation(currentKeyFrame, match.trainIdx);
+            mappoint->addObservation(current, match.trainIdx);
 
             keyframe->addMapPoint(match.queryIdx, mappoint);
-            currentKeyFrame->addMapPoint(match.trainIdx, mappoint);
+            current->addMapPoint(match.trainIdx, mappoint);
 
             map->addMappoint(mappoint);
         }
-        _keyframeDuplicates(currentKeyFrame, keyframe);
+        _keyframeDuplicates(current, keyframe);
     }
-    map->addKeyframe(currentKeyFrame);
+    map->addKeyframe(current);
     _removeDuplicates();
     /* optimizer::globalBundleAdjustment(map); */
     /**

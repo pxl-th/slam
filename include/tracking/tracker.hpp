@@ -27,12 +27,8 @@ public:
 public:
     std::shared_ptr<cv::Mat> cameraMatrix, distortions;
 
-    std::shared_ptr<KeyFrame>
-        initialKeyFrame,
-        lastKeyFrame,
-        currentKeyFrame;
+    std::shared_ptr<KeyFrame> lastKeyFrame, currentKeyFrame;
 
-    Initializer initializer;
     std::shared_ptr<Detector> detector;
     Matcher matcher;
     Mapper mapper;
