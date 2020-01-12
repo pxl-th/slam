@@ -118,11 +118,10 @@ void Mapper::process() {
         _keyframeDuplicates(current, keyframe);
     }
     map->addKeyframe(current);
-    _removeDuplicates();
-    /* optimizer::globalBundleAdjustment(map); */
-    /**
-     * - perform BA
-     */
+    /* _removeDuplicates(); */
+    std::cout
+        << "[mapping] Added keyframe with "
+        << current->mappoints.size() << " mappoints" << std::endl;
 }
 
 void Mapper::_createConnections(
@@ -143,8 +142,6 @@ void Mapper::_createConnections(
             else counter[keyframe]++;
         }
     }
-    std::cout << "[mapping] Counters" << std::endl;
-    for (auto [k, c] : counter) std::cout << k->id << " | " << c << std::endl;
     // Create connections with KeyFrames that more than `threshold`
     // shared MapPoints.
     int maxCount = 0;
@@ -164,9 +161,9 @@ void Mapper::_createConnections(
             keyframe->connections[targetKeyFrame] = count;
         }
     }
-    std::cout
-        << "[mapping] Connections formed "
-        << targetKeyFrame->connections.size() << std::endl;
+    std::cout << "[mapping] Connections" << std::endl;
+    for (const auto& [k, c] : targetKeyFrame->connections)
+        std::cout << k << ": " << c << std::endl;
 }
 
 std::variant<

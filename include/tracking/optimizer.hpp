@@ -39,6 +39,7 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations = 20);
  * @param iterations Number of optimization iterations.
  */
 void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations = 20);
+void localOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations = 20);
 };
 };
 
