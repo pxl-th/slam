@@ -1,4 +1,6 @@
 #pragma warning(push, 0)
+#include<unordered_set>
+
 #include<Eigen/Core>
 
 #include<g2o/core/block_solver.h>
@@ -23,7 +25,6 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
         << "[optimization] Map contains "
         << keyframes.size() << " keyframes and "
         << mappoints.size() << " mappoints" << std::endl;
-
     // Set optimizer.
     auto algorithm = new g2o::OptimizationAlgorithmLevenberg(
         g2o::make_unique<g2o::BlockSolverX>(
@@ -32,7 +33,6 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
     );
     g2o::SparseOptimizer optimizer;
     optimizer.setAlgorithm(algorithm);
-
     // Set KeyFrame vertices.
     int kId, mId = 0, mIdT;
     for (const auto& keyframe : keyframes) {
@@ -47,7 +47,6 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
     }
     mId++;
     mIdT = mId;
-
     // Set MapPoint vertices.
     for (const auto& mappoint : mappoints) {
         auto point = new g2o::VertexSBAPointXYZ();
@@ -56,7 +55,6 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
         point->setEstimate(pointToVec3d(mappoint->getWorldPos()));
 
         optimizer.addVertex(point);
-
         // Set edges.
         // Each edge connects current mappoint vertex with
         // every keyframe vertex, that it is visible from.
@@ -95,7 +93,6 @@ void globalBundleAdjustment(std::shared_ptr<Map> map, int iterations) {
     optimizer.setVerbose(false);
     optimizer.initializeOptimization();
     optimizer.optimize(iterations);
-
     // Update map with optimized hypergraph.
     for (auto& keyframe : keyframes) {
         auto vertex = dynamic_cast<g2o::VertexSE3Expmap*>(
@@ -130,7 +127,6 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
     auto edgeVertex = dynamic_cast<g2o::OptimizableGraph::Vertex*>(
         optimizer.vertex(0)
     );
-
     // Set mappoints vertices.
     int id = 1;
     for (const auto& [i, p] : keyframe->getMapPoints()) {
@@ -148,7 +144,6 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
         observation << keypoint.pt.x, keypoint.pt.y;
 
         optimizer.addVertex(vertexMP);
-
         // Set edge.
         // Edge connects current mappoint vertex with keyframe vertex.
         auto edge = new g2o::EdgeSE3ProjectXYZ();
@@ -176,12 +171,124 @@ void poseOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
     optimizer.setVerbose(false);
     optimizer.initializeOptimization();
     optimizer.optimize(iterations);
-
     // Recover optimized pose.
     auto keyframeVertex = dynamic_cast<g2o::VertexSE3Expmap*>(
         optimizer.vertex(0)
     );
     keyframe->setPose(se3QuatToMat(keyframeVertex->estimate()));
+}
+
+void localOptimization(std::shared_ptr<KeyFrame> keyframe, int iterations) {
+    // Set optimizer.
+    auto algorithm = new g2o::OptimizationAlgorithmLevenberg(
+        g2o::make_unique<g2o::BlockSolverX>(
+            g2o::make_unique<g2o::LinearSolverEigen<g2o::BlockSolverX::PoseMatrixType>>()
+        )
+    );
+    g2o::SparseOptimizer optimizer;
+    optimizer.setAlgorithm(algorithm);
+
+    std::unordered_set<std::shared_ptr<KeyFrame>> localKeyframes;
+    std::unordered_set<std::shared_ptr<KeyFrame>> fixedKeyframes;
+
+    // Set local KeyFrame.
+    localKeyframes.insert(keyframe);
+    for (auto [connection, count] : keyframe->connections)
+        localKeyframes.insert(connection);
+    // Set fixed KeyFrame.
+    // Fixed KeyFrames are those, that observe a MapPoint,
+    // but are not a local KeyFrames (e.g. not in a connection with `keyframe`).
+    for (auto [id, mappoint] : keyframe->mappoints) {
+        for (auto [observation, idO] : mappoint->getObservations()) {
+            if (localKeyframes.find(observation) != localKeyframes.end())
+                continue;
+            fixedKeyframes.insert(observation);
+        }
+    }
+    // Create local KeyFrame vertices.
+    int kId, mId = 0;
+    for (const auto localKeyframe : localKeyframes) {
+        kId = static_cast<int>(localKeyframe->id);
+        auto vertex = new g2o::VertexSE3Expmap();
+        vertex->setId(kId);
+        vertex->setFixed(kId == 0);
+        vertex->setEstimate(matToSE3Quat(localKeyframe->getPose()));
+
+        optimizer.addVertex(vertex);
+        if (mId < kId) mId = kId;
+    }
+    // Create fixed KeyFrame vertices.
+    for (const auto fixedKeyframe : fixedKeyframes) {
+        kId = static_cast<int>(fixedKeyframe->id);
+        auto vertex = new g2o::VertexSE3Expmap();
+        vertex->setId(kId);
+        vertex->setFixed(kId == 0);
+        vertex->setEstimate(matToSE3Quat(fixedKeyframe->getPose()));
+
+        optimizer.addVertex(vertex);
+        if (mId < kId) mId = kId;
+    }
+    mId++;
+    int mIdT = mId;
+    // Create MapPoint vertices.
+    for (auto [id, mappoint] : keyframe->mappoints) {
+        auto point = new g2o::VertexSBAPointXYZ();
+        point->setId(mId);
+        point->setMarginalized(true);
+        point->setEstimate(pointToVec3d(mappoint->getWorldPos()));
+
+        optimizer.addVertex(point);
+        // Set edges.
+        // Each edge connects current mappoint vertex with
+        // every keyframe vertex, that it is visible from.
+        // With edge's observation being a keyframe's keypoint.
+        auto observations = mappoint->getObservations();
+        for (const auto& [keyframeO, keypointId] : observations) {
+            auto keypoint = keyframeO->getFrame()->undistortedKeypoints[keypointId];
+            auto edge = new g2o::EdgeSE3ProjectXYZ();
+            auto kernel = new g2o::RobustKernelHuber();
+
+            Eigen::Matrix<double, 2, 1> observation;
+            observation << keypoint.pt.x, keypoint.pt.y;
+
+            edge->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                optimizer.vertex(mId)
+            ));
+            edge->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(
+                optimizer.vertex(static_cast<int>(keyframeO->id))
+            ));
+            edge->setMeasurement(observation);
+            edge->setInformation(
+                Eigen::Matrix2d::Identity()
+                * keyframeO->getFrame()->invSigma[keypoint.octave]
+            );
+            edge->setRobustKernel(kernel);
+
+            edge->fx = keyframeO->getFrame()->cameraMatrix->at<float>(0, 0);
+            edge->fy = keyframeO->getFrame()->cameraMatrix->at<float>(1, 1);
+            edge->cx = keyframeO->getFrame()->cameraMatrix->at<float>(0, 2);
+            edge->cy = keyframeO->getFrame()->cameraMatrix->at<float>(1, 2);
+
+            optimizer.addEdge(edge);
+        }
+        mId++;
+    }
+    optimizer.setVerbose(false);
+    optimizer.initializeOptimization();
+    optimizer.optimize(iterations);
+    // Update map with optimized hypergraph.
+    for (auto localKeyframe : localKeyframes) {
+        auto vertex = dynamic_cast<g2o::VertexSE3Expmap*>(
+            optimizer.vertex(static_cast<int>(localKeyframe->id))
+        );
+        localKeyframe->setPose(se3QuatToMat(vertex->estimate()));
+    }
+    for (auto [id, mappoint] : keyframe->mappoints) {
+        auto vertex = dynamic_cast<g2o::VertexSBAPointXYZ*>(
+            optimizer.vertex(mIdT++)
+        );
+        mappoint->setWorldPos(vec3dToPoint3f(vertex->estimate()));
+    }
 }
 
 };

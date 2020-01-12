@@ -111,10 +111,9 @@ int main() {
         std::cerr << "Cannot open file" << std::endl;
         return -1;
     }
-    int totalFrames = 0;
-    int n = 0, i = 0, s = 35;
+
+    int i = 0, s = 35, totalFrames = 0;
     while (true) {
-        /* if (n++ == 2) break; */
         if (tracker.state == slam::Tracker::LOST) break;
         else if (tracker.state == slam::Tracker::INITIALIZED) {
             s = 3;
@@ -154,5 +153,5 @@ int main() {
     cv::destroyAllWindows();
 
     std::cout << "Total Frames processed " << totalFrames << std::endl;
-    drawMap(tracker.map);
+    drawMap(tracker.mapper.map);
 }

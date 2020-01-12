@@ -18,7 +18,7 @@ namespace slam {
  */
 class Mapper {
 private:
-    std::shared_ptr<KeyFrame> currentKeyFrame;
+    std::shared_ptr<KeyFrame> current;
     std::queue<std::shared_ptr<KeyFrame>> keyframeQueue;
 
     Matcher matcher;
@@ -27,8 +27,25 @@ public:
 public:
     Mapper();
     Mapper(Matcher matcher);
-
+    /**
+     * Add KeyFrame to queue for processing.
+     *
+     * @param keyframe KeyFrame to process and add to the map.
+     */
     void addKeyframe(std::shared_ptr<KeyFrame> keyframe);
+    /**
+     * Clear content of the keyframe queue.
+     */
+    void clearQueue();
+    /**
+     * Initialize map.
+     * For this, keyframe queue should have two KeyFrames
+     * from which to create map.
+     *
+     * @return `true` if successfully initialized map, `false` --- otherwise.
+     */
+    bool initialize();
+    void process();
     /**
      * TODO
      */
@@ -40,7 +57,6 @@ public:
         std::vector<cv::DMatch> matches, bool recoverPose
     );
 private:
-    void _processKeyFrame();
     /**
      * Create connections between keyframes that
      * share `mappoints` with `keyframe`.
@@ -81,15 +97,13 @@ private:
      * Given two MapPoints test, whether they are duplicates of each other.
      *
      * Test involves:\n
-     * 1) checking if they correspond to the same feature point;\n
-     * 2) checking if their descriptors are closer than `descriptorDistance`
+     * 1) checking if their descriptors are closer than `descriptorDistance`
      * in terms of Hamming distance;\n
-     * 3) checking if the distance between MapPoints in space is smaller
+     * 2) checking if the distance between MapPoints in space is smaller
      * than `pointDistance` \f$ \left\lVert p_1 - p_2 \right\rVert < d \f$,
      * where \f$d\f$ --- `pointDistance`.
      *
-     * If at least two of the three test pass --- mappoints are
-     * considered to be outliers.
+     * If both tests pass --- then these points considered to be outliers.
      *
      * @param mappoint1 First MapPoint.
      * @param descriptor1 Descriptor of the KeyPoint from which
