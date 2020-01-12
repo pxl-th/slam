@@ -12,18 +12,17 @@
 namespace slam {
 
 Frame::Frame(
-    std::shared_ptr<cv::Mat> image, const double timestamp,
+    std::shared_ptr<cv::Mat> image,
     std::shared_ptr<Detector> detector,
-    std::shared_ptr<cv::Mat> cameraMatrix, std::shared_ptr<cv::Mat> distortions
-) : image(image), timestamp(timestamp), detector(detector),
-    cameraMatrix(cameraMatrix), distortions(distortions) {
+    std::shared_ptr<cv::Mat> cameraMatrix,
+    std::shared_ptr<cv::Mat> distortions
+) : image(image), detector(detector), cameraMatrix(cameraMatrix),
+    distortions(distortions) {
     descriptors = std::make_shared<cv::Mat>();
-
     // Detect and extract keypoints and their descriptors.
     detector->detect(image, keypoints, descriptors);
     if (keypoints.empty()) return;
     _undistortKeyPoints();
-
     // Calculate scales for each level in detector's pyramid.
     // This will be used in Bundle Adjustment as edge's information.
     const float scale = static_cast<float>(detector->getScaleFactor());
@@ -44,21 +43,18 @@ void Frame::_undistortKeyPoints() {
         undistortedKeypoints = keypoints;
         return;
     }
-
     // Convert keypoints to matrix representation.
     cv::Mat undistorted(static_cast<int>(keypoints.size()), 2, CV_64F);
     for (int i = 0; i < keypoints.size(); i++) {
         undistorted.at<float>(i, 0) = keypoints[i].pt.x;
         undistorted.at<float>(i, 1) = keypoints[i].pt.y;
     }
-
     undistorted.reshape(2);
     cv::undistortPoints(
         undistorted, undistorted, *cameraMatrix.get(),
         *distortions.get(), cv::Mat(), *cameraMatrix.get()
     );
     undistorted.reshape(1);
-
     // Convert undistorted keypoints from matrix representation to list.
     undistortedKeypoints.resize(keypoints.size());
     for(int i = 0; i < keypoints.size(); i++) {

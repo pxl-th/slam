@@ -41,22 +41,19 @@ public:
      * of the hypergraph used in the Bundle Adjustment.
      */
     std::vector<float> invSigma;
-
-    double timestamp;
 public:
     Frame() {}
     /**
      * Create frame from given image.
      *
      * @param image Image of the current frame.
-     * @param timestamp Timestamp of the image.
      * @param detector Keypoints detector for feature extraction.
      * @param cameraMatrix Camera matrix calculated using Calibration.
      * @param distortions Distortions coefficients calculated using Calibration.
      */
     Frame(
         std::shared_ptr<cv::Mat> image,
-        const double timestamp, std::shared_ptr<Detector> detector,
+        std::shared_ptr<Detector> detector,
         std::shared_ptr<cv::Mat> cameraMatrix,
         std::shared_ptr<cv::Mat> distortions
     );

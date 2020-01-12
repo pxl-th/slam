@@ -19,9 +19,8 @@ Tracker::Tracker(
 }
 
 void Tracker::track(std::shared_ptr<cv::Mat> image) {
-    // TODO: correct timestamp
     std::cout << "[tracking] Packing image" << std::endl;
-    currentKeyFrame = _packImage(image, 0);
+    currentKeyFrame = _packImage(image);
     std::cout << "[tracking] State " << state << std::endl;
 
     switch (state) {
@@ -152,12 +151,11 @@ void Tracker::_updateMotion(bool successfulTracking) {
     velocity = currentKeyFrame->getPose() * lastMotion;
 }
 
-std::shared_ptr<KeyFrame>
-Tracker::_packImage(std::shared_ptr<cv::Mat> image, double timestamp) {
-    auto frame = std::make_shared<Frame>(
-        image, timestamp, detector, cameraMatrix, distortions
+std::shared_ptr<KeyFrame> Tracker::_packImage(std::shared_ptr<cv::Mat> image) {
+    return std::make_shared<KeyFrame>(
+        std::make_shared<Frame>(image, detector, cameraMatrix, distortions),
+        cv::Mat::eye(4, 4, CV_32F)
     );
-    return std::make_shared<KeyFrame>(frame, cv::Mat::eye(4, 4, CV_32F));
 }
 
 };

@@ -7,12 +7,10 @@
 
 #include"calibration/calibration.hpp"
 #include"frame/matcher.hpp"
-#include"initializer.hpp"
 #include"map/map.hpp"
 #include"tracking/mapper.hpp"
 
 namespace slam {
-
 /**
  * Class that performes tracking of the KeyPoints in the frames.
  */
@@ -129,12 +127,9 @@ private:
      * Create KeyFrame from `image` with identity pose matrix.
      *
      * @param image Image to pack into KeyFrame.
-     * @param timestamp Timestamp of when this image was taken.
      * @return New KeyFrame with identity pose matrix and no mappoints.
      */
-    std::shared_ptr<KeyFrame> _packImage(
-        std::shared_ptr<cv::Mat> image, double timestamp
-    );
+    std::shared_ptr<KeyFrame> _packImage(std::shared_ptr<cv::Mat> image);
 };
 
 };
