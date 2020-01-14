@@ -21,13 +21,19 @@ public:
     /**
      * Find matches between descriptors in given frames.
      *
-     * @param frame1 Frame which will be used to find matches with `frame2`.
-     * @param frame2 Frame which will be used to find mathces with `frame1`
+     * @param keyframe1 KeyFrame which will be used to find matches with keyframe2.
+     * @param keyframe2 KeyFrame which will be used to find mathces with keyframe1.
      * @param maximumDistance Maximum distance in terms of Hamming distance.
      * @param areaSize If you want to find matches for keypoints in an area
      * in terms of pixel distance between keypoints, then specify distance.
      * If you want to find matches between all keypoints,
      * no matter what pixel distace, specify `-1`.
+     * @param maxLevel KeyPoint matches whose `octave` is higher than
+     * this value will be discarded.
+     * @param withMappoints If `true`, finding matched will be done only
+     * using KeyPoints associated with MapPoints in keyframe1.
+     * This option is useful in tracking to speed up it.
+     * If `false` then matching will be done using all KeyPoints.
      * @return matches Output vector which will contain matches.
      * Where `query` indices are for the `frame1`
      * and `train` indices --- `frame2`.

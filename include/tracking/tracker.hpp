@@ -114,6 +114,13 @@ private:
      * Add mappoints to `keyframe` with `trainIdx` if there
      * is mappoint in `lastMappoints` under `queryIdx` key
      * from `matches`.
+     * @param checkMatches If `true`, then it will check if lastKeyFrame
+     * contains MapPoint under `queryIdx`.
+     * Otherwise it will not check.
+     * You can disable checking if you've done frame matching
+     * `withMappoints` set to `true` or projection matching,
+     * since they guaratee that all matches have respectful MapPoints
+     * in lastKeyFrame.
      */
     void _addMatches(
         std::shared_ptr<KeyFrame>& keyframe,
