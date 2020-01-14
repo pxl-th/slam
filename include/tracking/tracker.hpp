@@ -24,9 +24,7 @@ public:
     };
 public:
     std::shared_ptr<cv::Mat> cameraMatrix, distortions;
-
     std::shared_ptr<KeyFrame> lastKeyFrame, currentKeyFrame;
-
     std::shared_ptr<Detector> detector;
     Matcher matcher;
     Mapper mapper;
@@ -116,11 +114,19 @@ private:
      * Add mappoints to `keyframe` with `trainIdx` if there
      * is mappoint in `lastMappoints` under `queryIdx` key
      * from `matches`.
+     * @param checkMatches If `true`, then it will check if lastKeyFrame
+     * contains MapPoint under `queryIdx`.
+     * Otherwise it will not check.
+     * You can disable checking if you've done frame matching
+     * `withMappoints` set to `true` or projection matching,
+     * since they guaratee that all matches have respectful MapPoints
+     * in lastKeyFrame.
      */
     void _addMatches(
-        std::shared_ptr<KeyFrame> keyframe,
-        std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
-        const std::vector<cv::DMatch>& matches
+        std::shared_ptr<KeyFrame>& keyframe,
+        const std::shared_ptr<KeyFrame>& lastKeyframe,
+        const std::vector<cv::DMatch>& matches,
+        bool checkMatches = false
     );
     void _removeMatches(std::shared_ptr<KeyFrame> keyframe);
     /**
