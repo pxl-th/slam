@@ -24,9 +24,7 @@ public:
     };
 public:
     std::shared_ptr<cv::Mat> cameraMatrix, distortions;
-
     std::shared_ptr<KeyFrame> lastKeyFrame, currentKeyFrame;
-
     std::shared_ptr<Detector> detector;
     Matcher matcher;
     Mapper mapper;
@@ -118,9 +116,10 @@ private:
      * from `matches`.
      */
     void _addMatches(
-        std::shared_ptr<KeyFrame> keyframe,
-        std::map<int, std::shared_ptr<MapPoint>>& lastMappoints,
-        const std::vector<cv::DMatch>& matches
+        std::shared_ptr<KeyFrame>& keyframe,
+        const std::shared_ptr<KeyFrame>& lastKeyframe,
+        const std::vector<cv::DMatch>& matches,
+        bool checkMatches = false
     );
     void _removeMatches(std::shared_ptr<KeyFrame> keyframe);
     /**

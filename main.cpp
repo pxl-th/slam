@@ -76,14 +76,11 @@ void drawMap(std::shared_ptr<slam::Map> map) {
 }
 
 cv::Mat drawMatches(
-    std::shared_ptr<slam::KeyFrame> keyframe1,
-    std::shared_ptr<slam::KeyFrame> keyframe2
+    const std::shared_ptr<slam::KeyFrame>& keyframe1,
+    const std::shared_ptr<slam::KeyFrame>& keyframe2,
+    const slam::Tracker& tracker
 ) {
-    slam::Matcher matcher;
-
-    auto matches = matcher.frameMatch(
-        keyframe1->getFrame(), keyframe2->getFrame(), 300, 50
-    );
+    auto matches = tracker.matcher.frameMatch(keyframe1, keyframe2, 300, 50, false);
 
     cv::Mat matchImg;
     cv::drawMatches(
@@ -96,7 +93,6 @@ cv::Mat drawMatches(
     );
 
     return matchImg;
-
 }
 
 int main() {

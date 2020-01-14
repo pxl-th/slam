@@ -33,9 +33,11 @@ public:
      * and `train` indices --- `frame2`.
      */
     std::vector<cv::DMatch> frameMatch(
-        std::shared_ptr<Frame> frame1, std::shared_ptr<Frame> frame2,
-        float maximumDistance, float areaSize = -1, int maxLevel = 4
-    );
+        const std::shared_ptr<KeyFrame>& keyframe1,
+        const std::shared_ptr<KeyFrame>& keyframe2,
+        float maximumDistance, float areaSize = -1, int maxLevel = 4,
+        bool withMappoints = true
+    ) const;
     /**
      * Find matches between KeyFrames.
      *
@@ -57,15 +59,15 @@ public:
      * and `train` indices --- `toKeyFrame`.
      */
     std::vector<cv::DMatch> projectionMatch(
-        std::shared_ptr<KeyFrame> fromKeyFrame,
-        std::shared_ptr<KeyFrame> toKeyFrame,
+        const std::shared_ptr<KeyFrame>& fromKeyFrame,
+        const std::shared_ptr<KeyFrame>& toKeyFrame,
         float maximumDistance, float areaSize = -1, int maxLevel = 4
-    );
+    ) const;
 private:
     std::vector<cv::Point2f> _projectMapPoints(
-        std::shared_ptr<KeyFrame> fromKeyFrame,
-        std::shared_ptr<KeyFrame> toKeyFrame
-    );
+        const std::shared_ptr<KeyFrame>& fromKeyFrame,
+        const std::shared_ptr<KeyFrame>& toKeyFrame
+    ) const;
 };
 
 };

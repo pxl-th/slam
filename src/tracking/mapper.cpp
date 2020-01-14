@@ -31,9 +31,7 @@ bool Mapper::initialize() {
     auto initial = keyframeQueue.front(); keyframeQueue.pop();
     current = keyframeQueue.front(); keyframeQueue.pop();
 
-    auto matches = matcher.frameMatch(
-        initial->getFrame(), current->getFrame(), 300, 50
-    );
+    auto matches = matcher.frameMatch(initial, current, 300, -1, 4, false);
     if (matches.size() < 100) return false;
     auto [reconstructedPoints, pose, mask] = std::get<0>(triangulatePoints(
         initial, current, matches, true
@@ -92,13 +90,9 @@ void Mapper::process() {
     // new MapPoints to the map if they pass outliers test.
     for (auto& connection : current->connections) {
         auto keyframe = connection.first;
-        auto matches = matcher.frameMatch(
-            keyframe->getFrame(), current->getFrame(), 300, -1
-        );
+        auto matches = matcher.frameMatch(keyframe, current, 300, -1, 4, false);
         if (matches.size() < 10) continue;
-        auto points = std::get<1>(triangulatePoints(
-            keyframe, current, matches, false
-        ));
+        auto points = std::get<1>(triangulatePoints(keyframe, current, matches, false));
 
         for (size_t i = 0; i < matches.size(); i++) {
             auto point = points[i]; auto match = matches[i];
