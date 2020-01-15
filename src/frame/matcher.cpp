@@ -96,11 +96,12 @@ std::vector<cv::DMatch> Matcher::projectionMatch(
     matcher->radiusMatch(
         descriptors1, *frame2->descriptors, descriptorMatches, maximumDistance
     );
-    // Project `fromKeyFrame`'s mappoint into `toKeyFrame`'s image plane.
-    auto projectedKeyPoints = _projectMapPoints(fromKeyFrame, toKeyFrame);
+    bool checkArea = areaSize != -1;
+    std::vector<cv::Point2f> projectedKeyPoints;
+    if (checkArea) // Project `fromKeyFrame`'s mappoint into `toKeyFrame`'s image plane.
+        projectedKeyPoints = _projectMapPoints(fromKeyFrame, toKeyFrame);
     // Filter out matches by pixel-distance and keypoint's octave.
     cv::Point2f distance;
-    bool checkArea = areaSize != -1;
     for (const auto& matches : descriptorMatches) {
         if (matches.empty()) continue;
         const auto& keypoint1 = keypoints1[matches[0].queryIdx];

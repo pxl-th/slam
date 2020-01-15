@@ -85,7 +85,23 @@ void Mapper::process() {
     std::cout << "[mapping] KeyFrame id " << current->id << std::endl;
     // For current KeyFrame create connections with other KeyFrames,
     // that share enough mappoints with it.
-    _createConnections(current, 1);
+    _createConnections(current, 0.2f * current->mappointsNumber());
+    // Try sharing already existing MapPoints with new KeyFrame.
+    // If enough MapPoints were shared, then there is no need to create new.
+    if (_share(current)) {
+        // Enough MapPoints were shared, no need to create new ones.
+        map->addKeyframe(current);
+        std::cout
+            << "[mapping] Map contains "
+            << map->getMappoints().size()
+            << " mappoints" << std::endl;
+        std::cout
+            << "[mapping] Enought mappoints were shared: "
+            << current->mappointsNumber()
+            << std::endl;
+        return;
+    }
+    // TODO create new mappoints from unmatched keypoints
     // For each connection triangulate matches and add
     // new MapPoints to the map if they pass outliers test.
     for (auto& connection : current->connections) {
@@ -121,43 +137,57 @@ void Mapper::process() {
 void Mapper::_createConnections(
     std::shared_ptr<KeyFrame> targetKeyFrame, int threshold
 ) {
-    targetKeyFrame->connections.clear();
+    if (!targetKeyFrame->connections.empty())
+        targetKeyFrame->connections.clear();
     std::map<std::shared_ptr<KeyFrame>, int> counter;
     std::cout
         << "[mapping] Mappoints for connections "
         << targetKeyFrame->mappointsNumber() << std::endl;
-    if (targetKeyFrame->mappointsNumber() == 0) assert(false);
+    assert(targetKeyFrame->mappointsNumber() != 0);
     // Count number of mappoints that are shared
     // between each KeyFrame and this KeyFrame.
+    int maxCount = 0;
     for (const auto [id, mappoint] : targetKeyFrame->getMapPoints()) {
         for (const auto [keyframe, keypointId] : mappoint->getObservations()) {
             if (keyframe->id == targetKeyFrame->id) continue;
-            if (counter.find(keyframe) == counter.end()) counter[keyframe] = 1;
-            else counter[keyframe]++;
+            int count = ++counter[keyframe];
+            if (count > maxCount) maxCount = count;
         }
     }
+    threshold = std::min(threshold, maxCount);
+    std::cout << "[mapping] Connection threshold " << threshold << std::endl;
     // Create connections with KeyFrames that more than `threshold`
     // shared MapPoints.
-    int maxCount = 0;
     for (const auto [keyframe, count] : counter) {
-        if (count > maxCount) maxCount = count;
         if (count < threshold) continue;
-        std::cout << keyframe->id << " | " << count << std::endl;
         targetKeyFrame->connections[keyframe] = count;
-        keyframe->connections[targetKeyFrame] = count;
-    }
-    // If no KeyFrame's have been found --- add KeyFrame with maximum count.
-    if (targetKeyFrame->connections.empty()) {
-        for (const auto [keyframe, count] : counter) {
-            if (count < maxCount) continue;
-            std::cout << keyframe->id << " | " << count << std::endl;
-            targetKeyFrame->connections[keyframe] = count;
-            keyframe->connections[targetKeyFrame] = count;
-        }
     }
     std::cout << "[mapping] Connections" << std::endl;
     for (const auto& [k, c] : targetKeyFrame->connections)
         std::cout << k << ": " << c << std::endl;
+}
+
+bool Mapper::_share(std::shared_ptr<KeyFrame>& keyframe, float matchRelation) {
+    std::unordered_set<unsigned long long> sharedMappoints;
+    for (const auto& [connection, count] : current->connections) {
+        auto matches = matcher.frameMatch(connection, current);
+        if (matches.size() < matchRelation * connection->mappointsNumber())
+            continue;
+        // Enough matches, add MapPoints from connection KeyFrame.
+        for (const auto& match : matches) {
+            if (current->mappoints.find(match.trainIdx) != current->mappoints.end())
+                continue;
+            auto& mappoint = connection->mappoints[match.queryIdx];
+            if (mappoint->observations.find(current) != mappoint->observations.end())
+                continue;
+            if (sharedMappoints.find(mappoint->id) != sharedMappoints.end())
+                continue;
+            current->addMapPoint(match.trainIdx, mappoint);
+            mappoint->addObservation(current, match.trainIdx);
+            sharedMappoints.insert(mappoint->id);
+        }
+    }
+    return keyframe->mappointsNumber() >= 100;
 }
 
 std::variant<

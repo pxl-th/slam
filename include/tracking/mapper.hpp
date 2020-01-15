@@ -68,7 +68,13 @@ private:
     void _createConnections(
         std::shared_ptr<KeyFrame> keyframe, int threshold = 15
     );
-
+    /**
+     * TODO doc
+     */
+    bool _share(std::shared_ptr<KeyFrame>& keyframe, float matchRelation = 0.3f);
+    /**
+     * TODO doc
+     */
     static std::tuple<cv::Mat, cv::Mat> _recoverPose(
         std::vector<cv::Point2f>& frame1Points,
         std::vector<cv::Point2f>& frame2Points,

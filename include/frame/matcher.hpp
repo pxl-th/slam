@@ -41,7 +41,7 @@ public:
     std::vector<cv::DMatch> frameMatch(
         const std::shared_ptr<KeyFrame>& keyframe1,
         const std::shared_ptr<KeyFrame>& keyframe2,
-        float maximumDistance, float areaSize = -1, int maxLevel = 4,
+        float maximumDistance = 300, float areaSize = -1, int maxLevel = 4,
         bool withMappoints = true
     ) const;
     /**
@@ -67,7 +67,7 @@ public:
     std::vector<cv::DMatch> projectionMatch(
         const std::shared_ptr<KeyFrame>& fromKeyFrame,
         const std::shared_ptr<KeyFrame>& toKeyFrame,
-        float maximumDistance, float areaSize = -1, int maxLevel = 4
+        float maximumDistance = 300, float areaSize = -1, int maxLevel = 4
     ) const;
 private:
     std::vector<cv::Point2f> _projectMapPoints(

@@ -10,8 +10,10 @@
 
 namespace slam {
 
+unsigned long long MapPoint::globalID = 0;
+
 MapPoint::MapPoint(const cv::Point3f& position, std::shared_ptr<KeyFrame> keyframe)
-    : position(position), keyframe(keyframe) {}
+    : id(globalID++), position(position), keyframe(keyframe) {}
 
 cv::Point3f MapPoint::getWorldPos() const { return position; }
 

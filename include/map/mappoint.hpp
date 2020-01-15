@@ -21,6 +21,8 @@ private:
      */
     cv::Point3f position;
 public:
+    static unsigned long long globalID;
+    unsigned long long id;
     /**
      * Main KeyFrame from which this MapPoint was created.
      */
