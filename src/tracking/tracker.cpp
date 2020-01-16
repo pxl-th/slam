@@ -73,10 +73,10 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
 bool Tracker::_trackFrame() {
     std::cout << "[tracking] Frame" << std::endl;
     // Add matched mappoints to current keyframe.
-    auto matches = matcher.frameMatch(lastKeyFrame, currentKeyFrame, 300, 50);
+    auto matches = matcher.mappointsFrameMatch(lastKeyFrame, currentKeyFrame, 300, 50);
     _addMatches(currentKeyFrame, lastKeyFrame, matches);
     if (currentKeyFrame->mappointsNumber() < 30) {
-        matches = matcher.frameMatch(lastKeyFrame, currentKeyFrame, 300, -1, -1);
+        matches = matcher.mappointsFrameMatch(lastKeyFrame, currentKeyFrame, 300, -1, -1);
         _addMatches(currentKeyFrame, lastKeyFrame, matches);
     }
     std::cout

@@ -80,7 +80,7 @@ cv::Mat drawMatches(
     const std::shared_ptr<slam::KeyFrame>& keyframe2,
     const slam::Tracker& tracker
 ) {
-    auto matches = tracker.matcher.frameMatch(keyframe1, keyframe2, 300, 50, false);
+    auto matches = tracker.matcher.frameMatch(keyframe1, keyframe2, {}, 300, 50);
 
     cv::Mat matchImg;
     cv::drawMatches(

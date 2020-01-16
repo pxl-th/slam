@@ -69,7 +69,16 @@ private:
         std::shared_ptr<KeyFrame> keyframe, int threshold = 15
     );
     /**
-     * TODO doc
+     * Share existing MapPoints in `keyframe` connections
+     * to facilitate MapPoint reusability.
+     *
+     * @param keyframe KeyFrame with which MapPoints will be shared.
+     * @param matchRelation Match relation for `keyframe` and its connection.
+     * If amount of matches is greater than
+     * `matchRelation * connection.mappointsNumber()` then MapPoints of
+     * this connection will be shared with `keyframe`.
+     * @return `true` if enough MapPoints were shared with `keyframe`
+     * among all its connections. `false` --- otherwise.
      */
     bool _share(std::shared_ptr<KeyFrame>& keyframe, float matchRelation = 0.3f);
     /**

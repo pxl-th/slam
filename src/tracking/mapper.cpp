@@ -31,7 +31,7 @@ bool Mapper::initialize() {
     auto initial = keyframeQueue.front(); keyframeQueue.pop();
     current = keyframeQueue.front(); keyframeQueue.pop();
 
-    auto matches = matcher.frameMatch(initial, current, 300, -1, 4, false);
+    auto matches = matcher.frameMatch(initial, current, {}, 300, -1, 4);
     if (matches.size() < 100) return false;
     auto [reconstructedPoints, pose, mask] = std::get<0>(triangulatePoints(
         initial, current, matches, true
@@ -106,7 +106,7 @@ void Mapper::process() {
     // new MapPoints to the map if they pass outliers test.
     for (auto& connection : current->connections) {
         auto keyframe = connection.first;
-        auto matches = matcher.frameMatch(keyframe, current, 300, -1, 4, false);
+        auto matches = matcher.frameMatch(keyframe, current, {}, 300, -1, 4);
         if (matches.size() < 10) continue;
         auto points = std::get<1>(triangulatePoints(keyframe, current, matches, false));
 
@@ -169,8 +169,10 @@ void Mapper::_createConnections(
 
 bool Mapper::_share(std::shared_ptr<KeyFrame>& keyframe, float matchRelation) {
     std::unordered_set<unsigned long long> sharedMappoints;
+    // Find matches between `keyframe` and its connections
+    // taking into account connection's MapPoints.
     for (const auto& [connection, count] : current->connections) {
-        auto matches = matcher.frameMatch(connection, current);
+        auto matches = matcher.mappointsFrameMatch(connection, current);
         if (matches.size() < matchRelation * connection->mappointsNumber())
             continue;
         // Enough matches, add MapPoints from connection KeyFrame.
