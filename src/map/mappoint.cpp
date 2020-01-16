@@ -1,8 +1,9 @@
 #pragma warning(push, 0)
 #include<iostream>
 
-#include<opencv2/core/cvdef.h>
 #include<opencv2/calib3d.hpp>
+#include<opencv2/core/cvdef.h>
+#include<opencv2/core/softfloat.hpp>
 #pragma warning(pop)
 
 #include"converter.hpp"
@@ -27,8 +28,8 @@ std::map<std::shared_ptr<KeyFrame>, int> MapPoint::getObservations() const {
     return observations;
 }
 
-void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframeO, int id) {
-    observations[keyframeO] = id;
+void MapPoint::addObservation(std::shared_ptr<KeyFrame> keyframeO, int idO) {
+    observations[keyframeO] = idO;
 }
 
 void MapPoint::removeObservation(std::shared_ptr<KeyFrame> keyframeO) {
@@ -56,6 +57,7 @@ bool isOutlier(
     const std::shared_ptr<KeyFrame>& trainKeyframe,
     const cv::DMatch& match
 ) {
+    if (std::isnan(point.x)) return true;
     auto pointMat = matFromPoint3f(point).t();
     // Check that parallax for a point lies in (0, 1) range.
     // Otherwise point considered an outlier and discarded.
@@ -95,8 +97,7 @@ double projectionError(
     );
 
     auto target = keyframe->getFrame()->undistortedKeypoints[keypointId].pt;
-    auto p = cv::norm(target - projection[0]);
-    return p;
+    return cv::norm(target - projection[0]);
 }
 
 };

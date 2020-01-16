@@ -20,6 +20,7 @@ class Mapper {
 private:
     std::shared_ptr<KeyFrame> current;
     std::queue<std::shared_ptr<KeyFrame>> keyframeQueue;
+    int lastReconstruction = 0;
 
     Matcher matcher;
 public:

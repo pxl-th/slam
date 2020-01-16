@@ -1,5 +1,7 @@
 #pragma warning(push, 0)
+#include<algorithm>
 #include<iostream>
+#include<unordered_set>
 
 #include<opencv2/calib3d.hpp>
 #pragma warning(pop)
@@ -47,7 +49,8 @@ std::vector<cv::DMatch> Matcher::frameMatch(
         areaSize, maxLevel
     );
     if (!ids.empty()) // Map query matches to `keyframe1` original KeyPoints.
-        for (auto& match : finalMatches) match.queryIdx = idMapping[match.queryIdx];
+        for (auto& match : finalMatches)
+            match.queryIdx = idMapping[match.queryIdx];
     return finalMatches;
 }
 
@@ -67,11 +70,21 @@ std::vector<cv::DMatch> Matcher::inverseMappointsFrameMatch(
     const std::shared_ptr<KeyFrame>& keyframe2,
     float maximumDistance, float areaSize, int maxLevel
 ) const {
+    if (keyframe1->mappoints.empty())
+        return frameMatch(keyframe1, keyframe2, {}, maximumDistance, areaSize, maxLevel);
+
+    std::vector<int> ids, mappointIds, matchIds;
     const auto& frame1 = keyframe1->getFrame();
-    std::vector<int> ids;
     for (int i = 0; i < static_cast<int>(frame1->undistortedKeypoints.size()); i++)
-        if (keyframe1->mappoints.find(i) == keyframe1->mappoints.end())
-            ids.push_back(i);
+        ids.push_back(i);
+    for (const auto& [id, mappoint] : keyframe1->mappoints)
+        mappointIds.push_back(id);
+
+    std::set_difference(
+        ids.begin(), ids.end(), mappointIds.begin(), mappointIds.end(),
+        std::inserter(matchIds, matchIds.begin())
+    );
+    ids = matchIds;
     return frameMatch(keyframe1, keyframe2, ids, maximumDistance, areaSize, maxLevel);
 }
 

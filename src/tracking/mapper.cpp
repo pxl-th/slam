@@ -80,6 +80,7 @@ bool Mapper::initialize() {
 }
 
 void Mapper::process() {
+    lastReconstruction++;
     current = keyframeQueue.front();
     keyframeQueue.pop();
     std::cout << "[mapping] KeyFrame id " << current->id << std::endl;
@@ -88,33 +89,34 @@ void Mapper::process() {
     _createConnections(current, 0.2f * current->mappointsNumber());
     // Try sharing already existing MapPoints with new KeyFrame.
     // If enough MapPoints were shared, then there is no need to create new.
-    if (_share(current)) {
+    if (_share(current) && lastReconstruction < 4) {
         // Enough MapPoints were shared, no need to create new ones.
         map->addKeyframe(current);
         std::cout
-            << "[mapping] Map contains "
-            << map->getMappoints().size()
+            << "[sharing] Map contains " << map->getMappoints().size()
             << " mappoints" << std::endl;
         std::cout
-            << "[mapping] Enought mappoints were shared: "
-            << current->mappointsNumber()
-            << std::endl;
+            << "[sharing] Enought mappoints were shared: "
+            << current->mappointsNumber() << std::endl;
         return;
     }
-    // TODO create new mappoints from unmatched keypoints
+    std::cout << "[mapping] Reconstruction" << std::endl;
+    lastReconstruction = 0;
     // For each connection triangulate matches and add
     // new MapPoints to the map if they pass outliers test.
     for (auto& connection : current->connections) {
         auto keyframe = connection.first;
-        auto matches = matcher.frameMatch(keyframe, current, {}, 300, -1, 4);
+        auto matches = matcher.inverseMappointsFrameMatch(current, keyframe);
         if (matches.size() < 10) continue;
         auto points = std::get<1>(triangulatePoints(keyframe, current, matches, false));
 
+        size_t inliers = 0;
         for (size_t i = 0; i < matches.size(); i++) {
             auto point = points[i]; auto match = matches[i];
             if (isOutlier(point, keyframe, current, match))
                 continue;
 
+            ++inliers;
             auto mappoint = std::make_shared<MapPoint>(point, current);
 
             mappoint->addObservation(keyframe, match.queryIdx);
@@ -125,7 +127,7 @@ void Mapper::process() {
 
             map->addMappoint(mappoint);
         }
-        _keyframeDuplicates(current, keyframe);
+        if (inliers > 0) _keyframeDuplicates(current, keyframe);
     }
     map->addKeyframe(current);
     /* _removeDuplicates(); */
