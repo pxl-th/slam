@@ -20,6 +20,7 @@ class Mapper {
 private:
     std::shared_ptr<KeyFrame> current;
     std::queue<std::shared_ptr<KeyFrame>> keyframeQueue;
+    int lastReconstruction = 0;
 
     Matcher matcher;
 public:
@@ -68,7 +69,22 @@ private:
     void _createConnections(
         std::shared_ptr<KeyFrame> keyframe, int threshold = 15
     );
-
+    /**
+     * Share existing MapPoints in `keyframe` connections
+     * to facilitate MapPoint reusability.
+     *
+     * @param keyframe KeyFrame with which MapPoints will be shared.
+     * @param matchRelation Match relation for `keyframe` and its connection.
+     * If amount of matches is greater than
+     * `matchRelation * connection.mappointsNumber()` then MapPoints of
+     * this connection will be shared with `keyframe`.
+     * @return `true` if enough MapPoints were shared with `keyframe`
+     * among all its connections. `false` --- otherwise.
+     */
+    bool _share(std::shared_ptr<KeyFrame>& keyframe, float matchRelation = 0.3f);
+    /**
+     * TODO doc
+     */
     static std::tuple<cv::Mat, cv::Mat> _recoverPose(
         std::vector<cv::Point2f>& frame1Points,
         std::vector<cv::Point2f>& frame2Points,

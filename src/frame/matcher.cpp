@@ -1,5 +1,7 @@
 #pragma warning(push, 0)
+#include<algorithm>
 #include<iostream>
+#include<unordered_set>
 
 #include<opencv2/calib3d.hpp>
 #pragma warning(pop)
@@ -13,17 +15,18 @@ Matcher::Matcher(cv::Ptr<cv::BFMatcher> matcher) : matcher(matcher) {}
 std::vector<cv::DMatch> Matcher::frameMatch(
     const std::shared_ptr<KeyFrame>& keyframe1,
     const std::shared_ptr<KeyFrame>& keyframe2,
-    float maximumDistance, float areaSize, int maxLevel, bool withMappoints
+    const std::vector<int>& ids,
+    float maximumDistance, float areaSize, int maxLevel
 ) const {
     const auto& frame1 = keyframe1->getFrame(), frame2 = keyframe2->getFrame();
     // Select descriptors for existing mappoints in `keyframe1`.
     cv::Mat descriptors1;
     std::vector<cv::KeyPoint> keypoints1;
     std::vector<int> idMapping;
-    if (withMappoints) {
-        descriptors1 = cv::Mat(static_cast<int>(keyframe1->mappoints.size()), 32, CV_8U);
+    if (!ids.empty()) {
+        descriptors1 = cv::Mat(static_cast<int>(ids.size()), 32, CV_8U);
         int rowId = 0;
-        for (const auto& [id, mappoint] : keyframe1->mappoints) {
+        for (const int id : ids) {
             idMapping.push_back(id);
             keypoints1.push_back(frame1->undistortedKeypoints[id]);
             const auto& row = frame1->descriptors->row(id);
@@ -36,39 +39,52 @@ std::vector<cv::DMatch> Matcher::frameMatch(
         keypoints1 = frame1->undistortedKeypoints;
     }
     // Find matches.
-    std::vector<cv::DMatch> finalMatches;
     std::vector<std::vector<cv::DMatch>> descriptorMatches;
     matcher->radiusMatch(
         descriptors1, *frame2->descriptors, descriptorMatches, maximumDistance
     );
     // Filter out matches by pixel-distance and keypoint's octave.
-    cv::Point2f distance;
-    bool checkArea = areaSize != -1;
-    for (const auto& matches : descriptorMatches) {
-        if (matches.empty()) continue;
-        const auto& keypoint1 = keypoints1[matches[0].queryIdx];
-        for (const auto& match : matches) {
-            if (
-                maxLevel != -1
-                && keypoint1.octave > maxLevel
-                && frame2->undistortedKeypoints[match.trainIdx].octave > maxLevel
-            ) continue;
-            if (!checkArea) {
-                finalMatches.push_back(match);
-                break;
-            }
-            distance = (
-                keypoint1.pt - frame2->undistortedKeypoints[match.trainIdx].pt
-            );
-            if (abs(distance.x) < areaSize && abs(distance.y) < areaSize) {
-                finalMatches.push_back(match);
-                break;
-            }
-        }
-    }
-    if (withMappoints) // Map query matches to `keyframe1` original KeyPoints.
-        for (auto& match : finalMatches) match.queryIdx = idMapping[match.queryIdx];
+    std::vector<cv::DMatch> finalMatches = _filterMatches(
+        keypoints1, frame2->undistortedKeypoints, descriptorMatches,
+        areaSize, maxLevel
+    );
+    if (!ids.empty()) // Map query matches to `keyframe1` original KeyPoints.
+        for (auto& match : finalMatches)
+            match.queryIdx = idMapping[match.queryIdx];
     return finalMatches;
+}
+
+std::vector<cv::DMatch> Matcher::mappointsFrameMatch(
+    const std::shared_ptr<KeyFrame>& keyframe1,
+    const std::shared_ptr<KeyFrame>& keyframe2,
+    float maximumDistance, float areaSize, int maxLevel
+) const {
+    std::vector<int> ids;
+    for (const auto& [id, mappoint] : keyframe1->mappoints)
+        ids.push_back(id);
+    return frameMatch(keyframe1, keyframe2, ids, maximumDistance, areaSize, maxLevel);
+}
+
+std::vector<cv::DMatch> Matcher::inverseMappointsFrameMatch(
+    const std::shared_ptr<KeyFrame>& keyframe1,
+    const std::shared_ptr<KeyFrame>& keyframe2,
+    float maximumDistance, float areaSize, int maxLevel
+) const {
+    if (keyframe1->mappoints.empty())
+        return frameMatch(keyframe1, keyframe2, {}, maximumDistance, areaSize, maxLevel);
+
+    std::vector<int> ids, mappointIds, matchIds;
+    const auto& frame1 = keyframe1->getFrame();
+    for (int i = 0; i < static_cast<int>(frame1->undistortedKeypoints.size()); i++)
+        ids.push_back(i);
+    for (const auto& [id, mappoint] : keyframe1->mappoints)
+        mappointIds.push_back(id);
+
+    std::set_difference(
+        ids.begin(), ids.end(), mappointIds.begin(), mappointIds.end(),
+        std::inserter(matchIds, matchIds.begin())
+    );
+    return frameMatch(keyframe1, keyframe2, matchIds, maximumDistance, areaSize, maxLevel);
 }
 
 std::vector<cv::DMatch> Matcher::projectionMatch(
@@ -91,48 +107,63 @@ std::vector<cv::DMatch> Matcher::projectionMatch(
         ++rowId;
     }
     // Find matches.
-    std::vector<cv::DMatch> finalMatches;
     std::vector<std::vector<cv::DMatch>> descriptorMatches;
     matcher->radiusMatch(
         descriptors1, *frame2->descriptors, descriptorMatches, maximumDistance
     );
-    // Project `fromKeyFrame`'s mappoint into `toKeyFrame`'s image plane.
-    auto projectedKeyPoints = _projectMapPoints(fromKeyFrame, toKeyFrame);
-    // Filter out matches by pixel-distance and keypoint's octave.
-    cv::Point2f distance;
     bool checkArea = areaSize != -1;
-    for (const auto& matches : descriptorMatches) {
+    std::vector<cv::Point2f> projectedKeyPoints;
+    if (checkArea) {// Project `fromKeyFrame`'s mappoint onto `toKeyFrame`'s image plane.
+        projectedKeyPoints = _projectMapPoints(fromKeyFrame, toKeyFrame);
+        for (size_t i = 0; i < projectedKeyPoints.size(); i++)
+            keypoints1[i].pt = projectedKeyPoints[i];
+    }
+    // Filter out matches by pixel-distance and keypoint's octave.
+    std::vector<cv::DMatch> finalMatches = _filterMatches(
+        keypoints1, frame2->undistortedKeypoints, descriptorMatches,
+        areaSize, maxLevel
+    );
+    // Map query matches to `keyframe1` original KeyPoints.
+    for (auto& match : finalMatches) match.queryIdx = idMapping[match.queryIdx];
+    return finalMatches;
+}
+
+std::vector<cv::DMatch> Matcher::_filterMatches(
+    const std::vector<cv::KeyPoint>& keypoints1,
+    const std::vector<cv::KeyPoint>& keypoints2,
+    const std::vector<std::vector<cv::DMatch>>& rawMatches,
+    float areaSize, int maxLevel
+) {
+    std::vector<cv::DMatch> finalMatches;
+    cv::Point2f distance;
+    bool noAreaCheck = areaSize == -1;
+    for (const auto& matches : rawMatches) {
         if (matches.empty()) continue;
         const auto& keypoint1 = keypoints1[matches[0].queryIdx];
-        const auto& projectedPoint = projectedKeyPoints[matches[0].queryIdx];
         for (const auto& match : matches) {
             if (
                 maxLevel != -1
                 && keypoint1.octave > maxLevel
-                && frame2->undistortedKeypoints[match.trainIdx].octave > maxLevel
+                && keypoints2[match.trainIdx].octave > maxLevel
             ) continue;
-            if (!checkArea) {
+            if (noAreaCheck) {
                 finalMatches.push_back(match);
                 break;
             }
-            distance = (
-                projectedPoint - frame2->undistortedKeypoints[match.trainIdx].pt
-            );
+            distance = keypoint1.pt - keypoints2[match.trainIdx].pt;
             if (abs(distance.x) < areaSize && abs(distance.y) < areaSize) {
                 finalMatches.push_back(match);
                 break;
             }
         }
     }
-    // Map query matches to `keyframe1` original KeyPoints.
-    for (auto& match : finalMatches) match.queryIdx = idMapping[match.queryIdx];
     return finalMatches;
 }
 
 std::vector<cv::Point2f> Matcher::_projectMapPoints(
     const std::shared_ptr<KeyFrame>& fromKeyFrame,
     const std::shared_ptr<KeyFrame>& toKeyFrame
-) const {
+) {
     cv::Mat rotation, translation;
     auto currentPose = toKeyFrame->getPose();
     cv::Rodrigues(currentPose.rowRange(0, 3).colRange(0, 3), rotation);

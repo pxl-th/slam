@@ -21,6 +21,8 @@ private:
      */
     cv::Point3f position;
 public:
+    static unsigned long long globalID;
+    unsigned long long id;
     /**
      * Main KeyFrame from which this MapPoint was created.
      */
@@ -59,7 +61,7 @@ public:
      * @param id Id of the keypoint in `keyframeO`
      * which corresponds to this MapPoint.
      */
-    void addObservation(std::shared_ptr<KeyFrame> keyframeO, int id);
+    void addObservation(std::shared_ptr<KeyFrame> keyframeO, int idO);
     void removeObservation(std::shared_ptr<KeyFrame> keyframeO);
 };
 
