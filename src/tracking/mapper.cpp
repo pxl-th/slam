@@ -105,6 +105,9 @@ void Mapper::process() {
     // For each connection triangulate matches and add
     // new MapPoints to the map if they pass outliers test.
     for (auto& connection : current->connections) {
+        // If enough MapPoints, add no more.
+        if (current->mappointsNumber() >= 200) break;
+        // Otherwise, add some more.
         auto keyframe = connection.first;
         auto matches = matcher.inverseMappointsFrameMatch(current, keyframe);
         if (matches.size() < 10) continue;

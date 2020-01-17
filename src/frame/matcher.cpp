@@ -84,8 +84,7 @@ std::vector<cv::DMatch> Matcher::inverseMappointsFrameMatch(
         ids.begin(), ids.end(), mappointIds.begin(), mappointIds.end(),
         std::inserter(matchIds, matchIds.begin())
     );
-    ids = matchIds;
-    return frameMatch(keyframe1, keyframe2, ids, maximumDistance, areaSize, maxLevel);
+    return frameMatch(keyframe1, keyframe2, matchIds, maximumDistance, areaSize, maxLevel);
 }
 
 std::vector<cv::DMatch> Matcher::projectionMatch(
