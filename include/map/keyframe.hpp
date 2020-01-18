@@ -33,7 +33,7 @@ public:
      * where `connections` is the number of mappoints that
      * are shared between `keyframe` and this KeyFrame.
      */
-    std::map<std::shared_ptr<KeyFrame>, int> connections;
+    std::map<std::shared_ptr<KeyFrame>, size_t> connections;
     static unsigned long long globalID;
     unsigned long long id;
 public:

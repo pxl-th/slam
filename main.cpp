@@ -64,12 +64,11 @@ void drawMap(std::shared_ptr<slam::Map> map) {
     cv::viz::WCloud cloud(adjustedPoints, cv::viz::Color::red());
     int cameraId = 0;
     while (!window.wasStopped()) {
-        for (const auto& [cameraWidget, cameraPosition] : cameras) {
+        for (const auto& [cameraWidget, cameraPosition] : cameras)
             window.showWidget(
                 std::to_string(cameraId++) + "CW",
                 cameraWidget, cameraPosition
             );
-        }
         window.showWidget("cloud", cloud);
         window.spinOnce(1, true);
     }
@@ -111,13 +110,8 @@ int main() {
     int i = 0, s = 35, totalFrames = 0;
     while (true) {
         if (tracker.state == slam::Tracker::LOST) break;
-        else if (tracker.state == slam::Tracker::INITIALIZED) {
+        else if (tracker.state == slam::Tracker::INITIALIZED)
             s = 3;
-            /* if (tracker.map->getKeyframes().size() == 30) { */
-            /*     std::cout << "enough is enough" << std::endl; */
-            /*     break; */
-            /* } */
-        }
 
         cv::Mat frame;
         capture >> frame;
@@ -134,9 +128,6 @@ int main() {
         );
         cv::resize(frame, frame, cv::Size(0, 0), scale, scale);
 
-        /* if (tracker.state == slam::Tracker::INITIALIZED) */
-        /*     imshow("henlo", drawMatches(tracker.lastKeyFrame, tracker.currentKeyFrame)); */
-        /* else */
         imshow("henlo", frame);
         if (cv::waitKey(1) == 'q') break;
         std::cout << "====================" << std::endl;
