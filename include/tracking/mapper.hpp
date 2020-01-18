@@ -67,7 +67,7 @@ private:
      * have to share to form a connection.
      */
     void _createConnections(
-        std::shared_ptr<KeyFrame> keyframe, int threshold = 15
+        std::shared_ptr<KeyFrame> keyframe, size_t threshold = 15
     );
     /**
      * Share existing MapPoints in `keyframe` connections

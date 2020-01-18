@@ -80,16 +80,18 @@ bool Mapper::initialize() {
 }
 
 void Mapper::process() {
-    lastReconstruction++;
+    ++lastReconstruction;
     current = keyframeQueue.front();
     keyframeQueue.pop();
     std::cout << "[mapping] KeyFrame id " << current->id << std::endl;
     // For current KeyFrame create connections with other KeyFrames,
     // that share enough mappoints with it.
-    _createConnections(current, 0.2f * current->mappointsNumber());
+    _createConnections(
+        current, static_cast<int>(std::roundf(0.2f * current->mappointsNumber()))
+    );
     // Try sharing already existing MapPoints with new KeyFrame.
     // If enough MapPoints were shared, then there is no need to create new.
-    if (_share(current) && lastReconstruction < 4) {
+    if (_share(current) && lastReconstruction < 3) {
         // Enough MapPoints were shared, no need to create new ones.
         map->addKeyframe(current);
         std::cout
@@ -102,15 +104,15 @@ void Mapper::process() {
     }
     std::cout << "[mapping] Reconstruction" << std::endl;
     lastReconstruction = 0;
+    auto newMappointsNumber = 1.2f * current->mappointsNumber();
     // For each connection triangulate matches and add
     // new MapPoints to the map if they pass outliers test.
     for (auto& connection : current->connections) {
         // If enough MapPoints, add no more.
-        if (current->mappointsNumber() >= 200) break;
+        if (current->mappointsNumber() >= newMappointsNumber) break;
         // Otherwise, add some more.
         auto keyframe = connection.first;
-        auto matches = matcher.inverseMappointsFrameMatch(current, keyframe);
-        if (matches.size() < 10) continue;
+        auto matches = matcher.inverseMappointsFrameMatch(current, keyframe, 280, -1, 3);
         auto points = std::get<1>(triangulatePoints(keyframe, current, matches, false));
 
         size_t inliers = 0;
@@ -140,36 +142,32 @@ void Mapper::process() {
 }
 
 void Mapper::_createConnections(
-    std::shared_ptr<KeyFrame> targetKeyFrame, int threshold
+    std::shared_ptr<KeyFrame> targetKeyFrame, size_t threshold
 ) {
     if (!targetKeyFrame->connections.empty())
         targetKeyFrame->connections.clear();
-    std::map<std::shared_ptr<KeyFrame>, int> counter;
-    std::cout
-        << "[mapping] Mappoints for connections "
-        << targetKeyFrame->mappointsNumber() << std::endl;
+    std::map<std::shared_ptr<KeyFrame>, size_t> counter;
     assert(targetKeyFrame->mappointsNumber() != 0);
     // Count number of mappoints that are shared
     // between each KeyFrame and this KeyFrame.
-    int maxCount = 0;
+    size_t maxCount = 0, currentCount;
     for (const auto [id, mappoint] : targetKeyFrame->getMapPoints()) {
         for (const auto [keyframe, keypointId] : mappoint->getObservations()) {
             if (keyframe->id == targetKeyFrame->id) continue;
-            int count = ++counter[keyframe];
-            if (count > maxCount) maxCount = count;
+            currentCount = ++counter[keyframe];
+            if (currentCount > maxCount) maxCount = currentCount;
         }
     }
     threshold = std::min(threshold, maxCount);
-    std::cout << "[mapping] Connection threshold " << threshold << std::endl;
     // Create connections with KeyFrames that more than `threshold`
     // shared MapPoints.
     for (const auto [keyframe, count] : counter) {
         if (count < threshold) continue;
         targetKeyFrame->connections[keyframe] = count;
     }
-    std::cout << "[mapping] Connections" << std::endl;
-    for (const auto& [k, c] : targetKeyFrame->connections)
-        std::cout << k << ": " << c << std::endl;
+    /* std::cout << "[mapping] Connections" << std::endl; */
+    /* for (const auto& [k, c] : targetKeyFrame->connections) */
+    /*     std::cout << k << ": " << c << std::endl; */
 }
 
 bool Mapper::_share(std::shared_ptr<KeyFrame>& keyframe, float matchRelation) {

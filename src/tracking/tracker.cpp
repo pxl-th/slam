@@ -19,9 +19,7 @@ Tracker::Tracker(
 }
 
 void Tracker::track(std::shared_ptr<cv::Mat> image) {
-    std::cout << "[tracking] Packing image" << std::endl;
     currentKeyFrame = _packImage(image);
-    std::cout << "[tracking] State " << state << std::endl;
 
     switch (state) {
     case NO_IMAGES:
@@ -38,26 +36,26 @@ void Tracker::track(std::shared_ptr<cv::Mat> image) {
         const bool motionTracking = (
             useMotion
             && !velocity.empty()
-            && (mapper.map->getKeyframes().size() >= 4)
+            && (successfulMotionUpdates >= motionAmount)
         );
-
         std::cout
             << "[tracking] last keyframe "
             << lastKeyFrame->mappointsNumber() << std::endl;
+
         bool successfulTracking = false;
         if (motionTracking) successfulTracking = _trackMotionFrame();
         if (!successfulTracking) successfulTracking = _trackFrame();
-        if (useMotion) _updateMotion(successfulTracking);
         std::cout
             << "[tracking] Successful tracking "
             << successfulTracking << std::endl;
 
+        if (useMotion) _updateMotion(successfulTracking);
         if (!successfulTracking) {
             state = LOST;
             return;
         }
 
-        if (currentKeyFrame->mappointsNumber() < 50) {
+        if (currentKeyFrame->mappointsNumber() < mappingAmount) {
             mapper.addKeyframe(currentKeyFrame);
             mapper.process();
         } else {
@@ -75,24 +73,20 @@ bool Tracker::_trackFrame() {
     // Add matched mappoints to current keyframe.
     auto matches = matcher.mappointsFrameMatch(lastKeyFrame, currentKeyFrame, 300, 50);
     _addMatches(currentKeyFrame, lastKeyFrame, matches);
-    if (currentKeyFrame->mappointsNumber() < 30) {
+    if (currentKeyFrame->mappointsNumber() < looseAmount) {
         matches = matcher.mappointsFrameMatch(lastKeyFrame, currentKeyFrame, 300, -1, -1);
         _addMatches(currentKeyFrame, lastKeyFrame, matches);
     }
-    std::cout
-        << "[tracking] matches "
-        << currentKeyFrame->mappointsNumber() << std::endl;
     currentKeyFrame->setPose(lastKeyFrame->getPose());
-    // TODO: do not optimize if no mappoints
-    optimizer::poseOptimization(currentKeyFrame);
+    if (currentKeyFrame->mappointsNumber() >= successfulAmount)
+        optimizer::poseOptimization(currentKeyFrame);
 
     matches = matcher.projectionMatch(lastKeyFrame, currentKeyFrame, 300, 50);
     _addMatches(currentKeyFrame, lastKeyFrame, matches);
-    std::cout
-        << "[tracking] matches "
-        << currentKeyFrame->mappointsNumber() << std::endl;
-    optimizer::poseOptimization(currentKeyFrame);
-    return currentKeyFrame->mappointsNumber() >= 5;
+    bool success = currentKeyFrame->mappointsNumber() >= successfulAmount;
+    if (success) optimizer::poseOptimization(currentKeyFrame);
+
+    return success;
 }
 
 bool Tracker::_trackMotionFrame() {
@@ -101,12 +95,14 @@ bool Tracker::_trackMotionFrame() {
 
     auto matches = matcher.projectionMatch(lastKeyFrame, currentKeyFrame, 300, 50);
     _addMatches(currentKeyFrame, lastKeyFrame, matches);
-    if (currentKeyFrame->mappointsNumber() < 30) {
+    if (currentKeyFrame->mappointsNumber() < looseAmount) {
         matches = matcher.projectionMatch(lastKeyFrame, currentKeyFrame, 300, -1, -1);
         _addMatches(currentKeyFrame, lastKeyFrame, matches);
     }
-    optimizer::poseOptimization(currentKeyFrame);
-    return currentKeyFrame->mappointsNumber() >= 5;
+
+    bool success = currentKeyFrame->mappointsNumber() >= successfulAmount;
+    if (success) optimizer::poseOptimization(currentKeyFrame);
+    return success;
 }
 
 void Tracker::_addMatches(
@@ -131,8 +127,10 @@ void Tracker::_addMatches(
 void Tracker::_updateMotion(bool successfulTracking) {
     if (!successfulTracking) {
         velocity = cv::Mat();
+        successfulMotionUpdates = 0;
         return;
     }
+    successfulMotionUpdates++;
 
     cv::Mat lastMotion = cv::Mat::eye(4, 4, CV_32F);
     auto lastPose = lastKeyFrame->getPose();

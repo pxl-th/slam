@@ -31,10 +31,21 @@ public:
 
     cv::Mat velocity;
     bool useMotion;
-public:
+
     States state;
 
     std::shared_ptr<Map> map;
+    // If tracking tracked more than `successfulAmount` MapPoints
+    // for `current` KeyFrame, then tracking considered successful.
+    size_t successfulAmount = 5;
+    // If tracking tracked less than `mappingAmount` MapPoints
+    // for `current` KeyFrame, then new KeyFrame is added to the Mapper
+    // to produce new MapPoints.
+    size_t mappingAmount = 50;
+    // If tracked less than `looseAmount` MapPoints for `current` KeyFrame,
+    // then try to track again with looser constraints on matches.
+    size_t looseAmount = 30;
+    size_t successfulMotionUpdates = 0, motionAmount = 4;
 public:
     Tracker(
         Calibration calibration,
